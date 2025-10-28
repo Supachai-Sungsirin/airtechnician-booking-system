@@ -1,0 +1,139 @@
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import Technician from "../models/Technician.js";
+
+// สมัครสมาชิก Customer
+export const registerCustomer = async (req, res) => {
+  try {
+    const { email, password, fullName, phone } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email นี้ถูกใช้งานแล้ว" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      fullName,
+      phone,
+      role: "customer",
+    });
+
+    await newUser.save();
+
+    res.status(201).json({
+      message: "สมัครสมาชิกสำเร็จ (Customer)",
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
+  } catch (error) {
+    console.error(" Error in registerCustomer:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+  }
+};
+
+// สมัครสมาชิก Technician
+export const registerTechnician = async (req, res) => {
+  try {
+    const {
+      email,
+      password,
+      fullName,
+      phone,
+      idCard,
+      selfieWithIdCard,
+      serviceArea,
+      bio,
+    } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email นี้ถูกใช้งานแล้ว" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      fullName,
+      phone,
+      role: "technician",
+    });
+
+    const savedUser = await newUser.save();
+
+    const newTechnician = new Technician({
+      userId: savedUser._id,
+      idCard,
+      selfieWithIdCard,
+      serviceArea,
+      bio,
+      status: "pending",
+    });
+
+    await newTechnician.save();
+
+    res.status(201).json({
+      message: "สมัครสมาชิกสำเร็จ (Technician - รออนุมัติ)",
+      technician: {
+        id: newTechnician._id,
+        userId: savedUser._id,
+        email: savedUser.email,
+        status: newTechnician.status,
+      },
+    });
+  } catch (error) {
+    console.error(" Error in registerTechnician:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "ไม่พบผู้ใช้งาน" });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ message: "รหัสผ่านไม่ถูกต้อง" });
+
+    // ถ้าเป็น Technician ให้เช็คสถานะก่อน
+    if (user.role === "technician") {
+      const technician = await Technician.findOne({ userId: user._id });
+      if (!technician) {
+        return res.status(400).json({ message: "ไม่พบข้อมูลช่าง" });
+      }
+      if (technician.status !== "approved") {
+        return res.status(403).json({ message: "บัญชียังไม่ผ่านการอนุมัติ" });
+      }
+    }
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "เข้าสู่ระบบสำเร็จ",
+      accessToken: token,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        fullName: user.fullName,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+  }
+};
