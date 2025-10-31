@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyToken } from "../middleware/authMiddleware.js";
+import { auth } from "../middleware/authMiddleware.js";
 import {
   createBooking,
   getCustomerBookings,
@@ -13,16 +13,16 @@ import {
 const router = express.Router();
 
 // ลูกค้าสร้าง Booking
-router.post("/", verifyToken, createBooking);
+router.post("/", auth, createBooking);
 // ดึง Booking ของลูกค้าและช่าง
-router.get("/customer", verifyToken, getCustomerBookings);
-router.get("/technician", verifyToken, getTechnicianBookings);
-router.get("/:id", verifyToken, getBookingById);
+router.get("/customer", auth, getCustomerBookings);
+router.get("/technician", auth, getTechnicianBookings);
+router.get("/:id", auth, getBookingById);
 // อัพเดตสถานะ Booking
-router.patch("/:id/status", verifyToken, updateBookingStatus);
+router.patch("/:id/status", auth, updateBookingStatus);
 
 // (สำหรับ Admin)
-router.get("/", verifyToken, getBookings);
-router.patch("/:id/assign-technician", verifyToken, assignTechnician);
+router.get("/", auth, getBookings);
+router.patch("/:id/assign-technician", auth, assignTechnician);
 
 export default router;
