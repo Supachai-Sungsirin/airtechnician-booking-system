@@ -11,7 +11,11 @@ const userSchema = new mongoose.Schema({
     enum: ["customer", "technician", "admin"],
     default: "customer"
   },
-  createdAt: { type: Date, default: Date.now }
+  address: { type: String },
+  district: { type: String, required: true }, // เขต เช่น บางนา ลาดพร้าว ดินแดง
+  province: { type: String, default: "Bangkok" }, // กรุงเทพล้วน
+  zipCode: { type: String },
+  createdAt: { type: Date, default: Date.now },
 });
 
 export default mongoose.model("User", userSchema);

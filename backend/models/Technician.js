@@ -9,21 +9,16 @@ const technicianSchema = new mongoose.Schema({
   },
   idCard: { type: String },
   selfieWithIdCard: { type: String },
-  serviceArea: { type: String, required: true },
+  homeDistrict: { type: String, required: true }, // เขตที่พักอาศัย
+  serviceArea: { type: [String], required: true }, // เขตที่ให้บริการ
   bio: { type: String },
   services: [
     {
-      type: {
-        type: String,
-        enum: ["cleaning", "repair", "install"],
-        required: true,
-      },
+      type: String,
+      enum: ["cleaning", "repair", "install"],
+      required: true,
     },
   ],
-  serviceArea: {
-    type: [String],
-    required: true,
-  },
   rating: { type: Number, default: 0 },
   totalReviews: { type: Number, default: 0 },
   status: {
