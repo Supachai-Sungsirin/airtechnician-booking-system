@@ -1,21 +1,17 @@
 import Booking from "../models/Booking.js";
 import Technician from "../models/Technician.js";
 import User from "../models/User.js";
+import Service from "../models/Service.js";
 
 // สร้าง Booking + Match ช่างตามเขต
 export const createBooking = async (req, res) => {
   try {
-    const { serviceType, problemDescription, requestedDateTime, address } =
-      req.body;
+    const { requestedDateTime, address, services } = req.body; 
     const customerId = req.user.id;
 
-    // ดึงข้อมูลลูกค้า เพื่อรู้ district
     const customer = await User.findById(customerId);
-
     if (!customer || !customer.district) {
-      return res.status(400).json({
-        message: "ไม่พบข้อมูลพื้นที่ของลูกค้า กรุณาเพิ่มเขตที่อยู่ก่อนจอง",
-      });
+      return res.status(400).json({ message: "กรุณาเพิ่มเขตที่อยู่ก่อนจอง" });
     }
 
     // หา technician ที่ approved และให้บริการในเขตลูกค้า
@@ -25,21 +21,45 @@ export const createBooking = async (req, res) => {
     }).populate("userId");
 
     if (!technician) {
-      return res.status(404).json({
-        message: `ยังไม่มีช่างให้บริการในเขต ${customer.district} ในตอนนี้`,
+      return res.status(404).json({ message: `ยังไม่มีช่างให้บริการในเขต ${customer.district}` });
+    }
+
+    // คำนวณราคารวม
+    let totalPrice = 0;
+    const bookingServices = [];
+
+    for (const s of services) {
+      const service = await Service.findById(s.serviceId);
+      if (!service) return res.status(404).json({ message: "Service ไม่พบ" });
+
+      // หา option ตาม BTU
+      let option = service.options.find(o => o.btuRange === s.btuRange);
+      if (!option) {
+        // ถ้าไม่มี BTU ที่ตรง ใช้ option แรก
+        option = service.options[0];
+      }
+
+      const price = option.unit === "per_unit" ? option.price * (s.quantity || 1) : option.price;
+
+      totalPrice += price;
+
+      bookingServices.push({
+        serviceId: service._id,
+        btuRange: s.btuRange,
+        quantity: s.quantity || 1,
+        price: price
       });
     }
 
-    // บันทึก Booking
     const newBooking = new Booking({
       customerId,
       technicianId: technician._id,
-      serviceType,
-      problemDescription,
+      services: bookingServices,
       requestedDateTime,
       address,
       district: customer.district,
-      status: "pending",
+      totalPrice,
+      status: "pending"
     });
 
     await newBooking.save();
@@ -49,11 +69,13 @@ export const createBooking = async (req, res) => {
       bookingId: newBooking._id,
       assignedTechnician: {
         name: technician.userId.fullName,
-        phone: technician.userId.phone,
+        phone: technician.userId.phone
       },
+      totalPrice
     });
+
   } catch (error) {
-    console.error(" Error in createBooking:", error);
+    console.error("Error in createBooking:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
   }
 };
@@ -62,31 +84,44 @@ export const createBooking = async (req, res) => {
 export const getCustomerBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ customerId: req.user.id })
-      .populate("technicianId")
+      .populate({
+        path: "technicianId",
+        populate: { path: "userId", select: "fullName phone" }
+      })
+      .populate({
+        path: "services.serviceId",
+        select: "name options"
+      })
       .sort({ createdAt: -1 });
 
     res.json(bookings);
   } catch (error) {
-    console.error(" error:", error);
+    console.error("Error getCustomerBookings:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาด" });
   }
 };
+
 
 // ช่างดูงานที่ได้รับ
 export const getTechnicianBookings = async (req, res) => {
-  const tech = await Technician.findOne({ userId: req.user.id });
-
   try {
+    const tech = await Technician.findOne({ userId: req.user.id });
+
     const bookings = await Booking.find({ technicianId: tech._id })
-      .populate("customerId")
+      .populate("customerId", "fullName phone district")
+      .populate({
+        path: "services.serviceId",
+        select: "name options"
+      })
       .sort({ createdAt: -1 });
 
     res.json(bookings);
   } catch (error) {
-    console.error(" error:", error);
+    console.error("Error getTechnicianBookings:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาด" });
   }
 };
+
 
 // ==========================
 // Admin: ดู Booking ทั้งหมด
@@ -118,6 +153,10 @@ export const getBookingById = async (req, res) => {
       .populate({
         path: "technicianId",
         populate: { path: "userId", select: "fullName phone" }
+      })
+      .populate({
+        path: "services.serviceId",
+        select: "name options"
       });
 
     if (!booking) return res.status(404).json({ message: "ไม่พบรายการจอง" });
@@ -128,6 +167,7 @@ export const getBookingById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // ==========================
 // Update Booking Status
@@ -154,7 +194,16 @@ export const updateBookingStatus = async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    );
+    )
+      .populate("customerId", "fullName phone district")
+      .populate({
+        path: "technicianId",
+        populate: { path: "userId", select: "fullName phone" }
+      })
+      .populate({
+        path: "services.serviceId",
+        select: "name options"
+      });
 
     if (!booking) return res.status(404).json({ message: "ไม่พบรายการจอง" });
 
@@ -164,6 +213,7 @@ export const updateBookingStatus = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // ==========================
 // Assign Technician (Admin ใช้)
@@ -180,10 +230,14 @@ export const assignTechnician = async (req, res) => {
       { technicianId, status: "assigned" },
       { new: true }
     )
-      .populate("customerId", "fullName phone")
+      .populate("customerId", "fullName phone district")
       .populate({
         path: "technicianId",
         populate: { path: "userId", select: "fullName phone" }
+      })
+      .populate({
+        path: "services.serviceId",
+        select: "name options"
       });
 
     if (!booking) return res.status(404).json({ message: "ไม่พบรายการจอง" });
