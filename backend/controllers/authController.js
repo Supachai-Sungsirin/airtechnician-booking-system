@@ -6,7 +6,20 @@ import Technician from "../models/Technician.js";
 // สมัครสมาชิก Customer
 export const registerCustomer = async (req, res) => {
   try {
-    const { email, password, fullName, phone } = req.body;
+    const {
+      email,
+      password,
+      fullName,
+      phone,
+      address,
+      district,
+      province,
+      zipCode,
+    } = req.body;
+
+    if (!district) {
+      return res.status(400).json({ message: "กรุณาระบุเขต (district)" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -20,6 +33,10 @@ export const registerCustomer = async (req, res) => {
       password: hashedPassword,
       fullName,
       phone,
+      address,
+      district,
+      province: province || "Bangkok", // ค่า default
+      zipCode,
       role: "customer",
     });
 
@@ -49,13 +66,27 @@ export const registerTechnician = async (req, res) => {
       phone,
       idCard,
       selfieWithIdCard,
+      homeDistrict,
       serviceArea,
       bio,
+      services,
     } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email นี้ถูกใช้งานแล้ว" });
+    }
+
+    if (!homeDistrict)
+      return res.status(400).json({ message: "กรุณาระบุเขตที่พักอาศัย" });
+    if (
+      !serviceArea ||
+      !Array.isArray(serviceArea) ||
+      serviceArea.length === 0
+    ) {
+      return res
+        .status(400)
+        .json({ message: "กรุณาระบุเขตที่ให้บริการ (อย่างน้อย 1 เขต)" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -65,17 +96,20 @@ export const registerTechnician = async (req, res) => {
       password: hashedPassword,
       fullName,
       phone,
+      district: homeDistrict,
       role: "technician",
     });
 
     const savedUser = await newUser.save();
-
+    
     const newTechnician = new Technician({
       userId: savedUser._id,
       idCard,
       selfieWithIdCard,
-      serviceArea,
+      homeDistrict,
+      serviceArea, // array ของเขตที่ให้บริการ
       bio,
+      services, // array ของประเภทบริการ ที่ช่างรับเช่น ["cleaning","repair"]
       status: "pending",
     });
 
@@ -130,6 +164,8 @@ export const login = async (req, res) => {
         email: user.email,
         role: user.role,
         fullName: user.fullName,
+        district: user.district,
+        province: user.province,
       },
     });
   } catch (error) {

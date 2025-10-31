@@ -1,31 +1,32 @@
 import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema({
-  customerId: {
+  customerId: {                               // ลูกค้า
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required: true,
   },
-  technicianId: {
+  technicianId: {                             // ช่าง
     type: mongoose.Schema.Types.ObjectId,
     ref: "Technician",
-    required: true
+    required: true,
   },
-  serviceType: {
+  serviceType: {                              // ประเภทบริการ
     type: String,
-    enum: ["cleaning", "repair", "install"],
-    required: true
+    enum: ["cleaning", "repair", "install", "maintenance", "refill", "move"],
+    required: true,
   },
-  problemDescription: { type: String, required: true },
-  requestedDateTime: { type: Date, required: true },
-  address: { type: String, required: true },
-  status: {
+  problemDescription: { type: String, required: true }, // รายละเอียดปัญหา
+  requestedDateTime: { type: Date, required: true }, // วันที่-เวลาที่ขอบริการ
+  address: { type: String, required: true }, // ที่อยู่ให้บริการ
+  district: { type: String, required: true }, // เขตที่ให้บริการ
+  status: {                                   // สถานะการจอง                          
     type: String,
     enum: ["pending", "accepted", "rejected", "completed", "cancelled"],
-    default: "pending"
+    default: "pending",
   },
-  totalPrice: { type: Number },
-  createdAt: { type: Date, default: Date.now }
+  totalPrice: { type: Number },             // ราคารวมหลังบริการเสร็จ
+  createdAt: { type: Date, default: Date.now },  // วันที่สร้างการจอง
 });
 
 export default mongoose.model("Booking", bookingSchema);
