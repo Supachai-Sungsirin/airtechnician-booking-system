@@ -49,32 +49,41 @@ export const addAdmin = async (req, res) => {
   }
 };
 
-// อนุมัติช่าง
-export const approveTechnician = async (req, res) => {
+// อัปเดตสถานะช่าง (approve / reject)
+export const updateTechnicianStatus = async (req, res) => {
   try {
     const technicianId = req.params.id;
+    const { status, rejectReason } = req.body;
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "สถานะไม่ถูกต้อง" });
+    }
 
     const technician = await Technician.findById(technicianId);
     if (!technician) {
       return res.status(404).json({ message: "ไม่พบข้อมูลช่าง" });
     }
 
-    // อัปเดตสถานะ
-    technician.status = "approved";
+    technician.status = status;
+    technician.rejectReason = status === "rejected" ? rejectReason : "";
     await technician.save();
 
     res.json({
-      message: "อนุมัติช่างสำเร็จ",
+      message: status === "approved" 
+        ? "อนุมัติช่างสำเร็จ" 
+        : "ปฏิเสธช่างสำเร็จ",
       technician: {
         id: technician._id,
         status: technician.status,
-      },
+        rejectReason: technician.rejectReason
+      }
     });
   } catch (error) {
-    console.error("Approve technician error:", error);
+    console.error("Update technician status error:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
   }
 };
+
 
 // เพิ่มงานบริการใหม่
 // controllers/adminController.js (ฟังก์ชัน addService ที่แก้ไข)
@@ -108,6 +117,74 @@ export const addService = async (req, res) => {
     });
   } catch (error) {
     console.error("Add service error:", error); // Mongoose จะจัดการ Validation Error จาก 'options' และ 'btuRange' ให้เอง
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+  }
+};
+
+// ดึงรายการบริการทั้งหมด
+export const getServices = async (req, res) => {
+  try {
+    const services = await Service.find().sort({ createdAt: -1 });
+    res.json(services);
+  } catch (error) {
+    console.error("Get services error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+  }
+};
+
+// อัปเดตข้อมูลบริการ
+export const updateService = async (req, res) => {
+  try {
+    const serviceId = req.params.id;
+    const { name, description, options } = req.body;
+
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "ไม่พบบริการ" });
+    }
+
+    if (name) service.name = name;
+    if (description) service.description = description;
+
+    // update options
+    if (Array.isArray(options)) {
+      options.forEach(opt => {
+        const exist = service.options.id(opt._id);
+        if (exist) {
+          // update existing subdoc
+          exist.btuRange = opt.btuRange ?? exist.btuRange;
+          exist.price = opt.price ?? exist.price;
+          exist.unit = opt.unit ?? exist.unit;
+        } else {
+          // push new option
+          service.options.push(opt);
+        }
+      });
+    }
+
+    service.markModified("options");
+    await service.save();
+
+    res.json({ message: "อัปเดตบริการสำเร็จ", service });
+  } catch (error) {
+    console.error("Update service error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+  }
+};
+
+
+export const deleteService = async (req, res) => {
+  try {
+    const serviceId = req.params.id;
+
+    const service = await Service.findByIdAndDelete(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "ไม่พบบริการ" });
+    }
+
+    res.json({ message: "ลบบริการสำเร็จ" });
+  } catch (error) {
+    console.error("Delete service error:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
   }
 };

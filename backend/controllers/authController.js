@@ -14,7 +14,7 @@ export const registerCustomer = async (req, res) => {
       address,
       district,
       province,
-      zipCode,
+      postalCode,
     } = req.body;
 
     if (!district) {
@@ -36,7 +36,7 @@ export const registerCustomer = async (req, res) => {
       address,
       district,
       province: province || "Bangkok", // ค่า default
-      zipCode,
+      postalCode,
       role: "customer",
     });
 
@@ -64,9 +64,12 @@ export const registerTechnician = async (req, res) => {
       password,
       fullName,
       phone,
+      address,
+      province,
+      postalCode,
       idCard,
       selfieWithIdCard,
-      homeDistrict,
+      district,
       serviceArea,
       bio,
       services,
@@ -75,9 +78,21 @@ export const registerTechnician = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email นี้ถูกใช้งานแล้ว" });
-    }
+    } // **ตรวจสอบข้อมูลที่จำเป็นทั้งหมด**
 
-    if (!homeDistrict)
+    if (
+      !email ||
+      !password ||
+      !fullName ||
+      !address ||
+      !province ||
+      !postalCode
+    ) {
+      return res
+        .status(400)
+        .json({ message: "กรุณากรอกข้อมูลส่วนตัว (รวมถึงที่อยู่) ให้ครบถ้วน" });
+    } // การตรวจสอบเฉพาะทาง
+    if (!district)
       return res.status(400).json({ message: "กรุณาระบุเขตที่พักอาศัย" });
     if (
       !serviceArea ||
@@ -96,35 +111,61 @@ export const registerTechnician = async (req, res) => {
       password: hashedPassword,
       fullName,
       phone,
-      district: homeDistrict,
+      address,
+      province,
+      postalCode,
+      district: district,
       role: "technician",
     });
 
+    // 1. บันทึก User
     const savedUser = await newUser.save();
-    
-    const newTechnician = new Technician({
-      userId: savedUser._id,
-      idCard,
-      selfieWithIdCard,
-      homeDistrict,
-      serviceArea, // array ของเขตที่ให้บริการ
-      bio,
-      services, // array ของประเภทบริการ ที่ช่างรับเช่น ["cleaning","repair"]
-      status: "pending",
-    });
 
-    await newTechnician.save();
-
-    res.status(201).json({
-      message: "สมัครสมาชิกสำเร็จ (Technician - รออนุมัติ)",
-      technician: {
-        id: newTechnician._id,
+    // 2. บันทึก Technician (อยู่ภายใน try/catch ภายใน)
+    try {
+      const newTechnician = new Technician({
         userId: savedUser._id,
-        email: savedUser.email,
-        status: newTechnician.status,
-      },
-    });
+        idCard,
+        selfieWithIdCard,
+        serviceArea,
+        bio,
+        services,
+        status: "pending",
+      });
+
+      await newTechnician.save();
+
+      res.status(201).json({
+        message: "สมัครสมาชิกสำเร็จ (Technician - รออนุมัติ)",
+        technician: {
+          id: newTechnician._id,
+          userId: savedUser._id,
+          email: savedUser.email,
+          status: newTechnician.status,
+        },
+      });
+    } catch (techError) {
+      // !!! ROLLBACK: หาก Technician บันทึกล้มเหลว ให้ลบ User ที่สร้างไปแล้วทิ้ง !!!
+      await User.findByIdAndDelete(savedUser._id);
+
+      console.error(
+        " Error in registerTechnician (Technician save failed, User rolled back):",
+        techError
+      );
+
+      // ตรวจสอบว่าเป็น Validation Error จาก Technician Model หรือไม่
+      if (techError.name === "ValidationError") {
+        return res.status(400).json({
+          message:
+            "ข้อมูลช่างเทคนิคไม่ถูกต้อง (กรุณาตรวจสอบข้อมูล Services หรือ ID Card)",
+          error: techError.message,
+        });
+      }
+
+      res.status(500).json({ message: "เกิดข้อผิดพลาดในการบันทึกข้อมูลช่าง" });
+    }
   } catch (error) {
+    // Catch สำหรับ Error ทั่วไป (เช่น User.save() ล้มเหลวจาก Mongoose Validation อื่นๆ)
     console.error(" Error in registerTechnician:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
   }

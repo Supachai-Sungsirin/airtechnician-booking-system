@@ -5,17 +5,32 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   phone: { type: String },
-  address: { type: String },
+
   role: {
     type: String,
     enum: ["customer", "technician", "admin"],
     default: "customer"
   },
-  address: { type: String },
-  district: { type: String, required: true }, // เขต เช่น บางนา ลาดพร้าว ดินแดง
-  province: { type: String, default: "Bangkok" }, // กรุงเทพล้วน
-  zipCode: { type: String },
-  createdAt: { type: Date, default: Date.now },
+
+  // เฉพาะลูกค้า/ช่างเท่านั้นที่ต้องมี
+  address: {
+    type: String,
+    required: function () { return this.role !== "admin"; }
+  },
+  district: {
+    type: String,
+    required: function () { return this.role !== "admin"; }
+  },
+  province: {
+    type: String,
+    required: function () { return this.role !== "admin"; }
+  },
+  postalCode: {
+    type: String,
+    required: function () { return this.role !== "admin"; }
+  },
+
+  createdAt: { type: Date, default: Date.now }
 });
 
 export default mongoose.model("User", userSchema);
