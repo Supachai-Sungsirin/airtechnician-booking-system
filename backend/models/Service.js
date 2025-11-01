@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 
 const ServiceOptionSchema = new mongoose.Schema({
+  label: { type: String }, // ใช้แทน btuRange กรณีเป็นชื่อแพ็กเกจ
   btuRange: {
     type: String, // เช่น "9000-12000", "18000-24000"
-    required: true
+    required: false
   },
   price: {
     type: Number,
@@ -11,7 +12,7 @@ const ServiceOptionSchema = new mongoose.Schema({
   },
   unit: {
     type: String,
-    enum: ["per_unit", "fixed"], 
+    enum: ["per_unit", "fixed", "starting"], 
     default: "per_unit" // per unit = คิดตามจำนวนเครื่อง, fixed = เหมาจ่าย
   }
 });

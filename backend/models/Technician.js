@@ -9,13 +9,12 @@ const technicianSchema = new mongoose.Schema({
   },
   idCard: { type: String },
   selfieWithIdCard: { type: String },
-  homeDistrict: { type: String, required: true }, // เขตที่พักอาศัย
   serviceArea: { type: [String], required: true }, // เขตที่ให้บริการ
   bio: { type: String },
   services: [
     {
       type: String,
-      enum: ["cleaning", "repair", "install"],
+      enum: ["cleaning", "repair", "install", "maintenance", "refill"],
       required: true,
     },
   ],
@@ -26,6 +25,7 @@ const technicianSchema = new mongoose.Schema({
     enum: ["pending", "approved", "rejected"],
     default: "pending",
   },
+  reason: { type: String, default: "" }, // กรณีถูกปฏิเสธ
   createdAt: { type: Date, default: Date.now },
 });
 
