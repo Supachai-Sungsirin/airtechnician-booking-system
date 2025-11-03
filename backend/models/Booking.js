@@ -30,6 +30,11 @@ const bookingSchema = new mongoose.Schema({
   },
   totalPrice: { type: Number }, // รวมทุก service
   createdAt: { type: Date, default: Date.now },
+
+  // --- เพิ่ม Field ใหม่ 3 ช่องนี้ ---
+  completedAt: { type: Date }, // วันที่ปิดงาน (สำหรับ completeBooking)
+  technicianNotes: { type: String, default: "" }, // โน้ตจากช่าง (สำหรับ completeBooking)
+  jobPhotos: [{ type: String }] // Array ของ URL รูปภาพ (สำหรับ uploadBookingPhoto)
 });
 
 export default mongoose.model("Booking", bookingSchema);

@@ -6,7 +6,7 @@ import Service from "../models/Service.js";
 // สร้าง Booking + Match ช่างตามเขต
 export const createBooking = async (req, res) => {
   try {
-    const { requestedDateTime, address, services } = req.body; 
+    const { requestedDateTime, address, services, problemDescription } = req.body; 
     const customerId = req.user.id;
 
     const customer = await User.findById(customerId);
@@ -58,6 +58,7 @@ export const createBooking = async (req, res) => {
       requestedDateTime,
       address,
       district: customer.district,
+      problemDescription,
       totalPrice,
       status: "pending"
     });
