@@ -1,60 +1,65 @@
-import { useState } from "react";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
-import { Link } from "react-router-dom";
-import api from "../services/api";
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import api from "../services/api"
+import PersonalInfoSection from "../components/register/PersonalInfoSection"
+import AddressSection from "../components/register/AddressSection"
 
 const Register = () => {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
     fullName: "",
     phone: "",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+    address: "",
+    district: "",
+    province: "กรุงเทพมหานคร",
+    postalCode: "",
+  })
+  const [message, setMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
   const handleGoogleSignup = () => {
-    // Redirect to Google OAuth endpoint
-    window.location.href = `${api.defaults.baseURL}/auth/google/technician`;
-  };
+    window.location.href = `${api.defaults.baseURL}/auth/google/customer`
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage("");
-    setIsSuccess(false);
+    e.preventDefault()
+    setIsLoading(true)
+    setMessage("")
+    setIsSuccess(false)
 
-    // ตรวจสอบว่าอีเมลลงท้ายด้วย @gmail.com หรือไม่
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+    // Validate email
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i
     if (!emailPattern.test(formData.email)) {
-      setMessage("กรุณากรอกอีเมลที่เป็น @gmail.com เท่านั้น");
-      setIsLoading(false);
-      return;
+      setMessage("กรุณากรอกอีเมลที่เป็น @gmail.com เท่านั้น")
+      setIsLoading(false)
+      return
     }
 
-    // ตรวจสอบเบอร์โทรศัพท์ว่ามีแค่ตัวเลข 10 หลัก
-    const phonePattern = /^[0-9]{10}$/; // regex สำหรับเบอร์ 10 ตัว
+    // Validate phone
+    const phonePattern = /^[0-9]{10}$/
     if (!phonePattern.test(formData.phone)) {
-      setMessage("กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (ตัวเลข 10 หลัก)");
-      setIsLoading(false);
-      return;
+      setMessage("กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (ตัวเลข 10 หลัก)")
+      setIsLoading(false)
+      return
     }
 
-    // ตรวจสอบรหัสผ่านตรงกันไหม
+    // Validate postal code
+    const postalCodePattern = /^[0-9]{5}$/
+    if (!postalCodePattern.test(formData.postalCode)) {
+      setMessage("กรุณากรอกรหัสไปรษณีย์ให้ถูกต้อง (ตัวเลข 5 หลัก)")
+      setIsLoading(false)
+      return
+    }
+
+    // Validate password match
     if (formData.password !== formData.confirmPassword) {
-      setMessage("รหัสผ่านไม่ตรงกัน");
-      setIsLoading(false);
-      return;
+      setMessage("รหัสผ่านไม่ตรงกัน")
+      setIsLoading(false)
+      return
     }
 
     try {
@@ -63,38 +68,35 @@ const Register = () => {
         password: formData.password,
         fullName: formData.fullName,
         phone: formData.phone,
-      });
+        address: formData.address,
+        district: formData.district,
+        province: formData.province,
+        postalCode: formData.postalCode,
+      })
 
-      setIsSuccess(true);
-      setMessage("สมัครสมาชิกสำเร็จ! กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...");
+      setIsSuccess(true)
+      setMessage("สมัครสมาชิกสำเร็จ! กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...")
 
       setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
+        navigate("/login")
+      }, 2000)
     } catch (err) {
-      console.error(err);
-      setIsSuccess(false);
-      setMessage(
-        err.response?.data?.message || "เกิดข้อผิดพลาดในการสมัครสมาชิก"
-      );
+      console.error(err)
+      setIsSuccess(false)
+      setMessage(err.response?.data?.message || "เกิดข้อผิดพลาดในการสมัครสมาชิก")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4">
             <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-              <svg
-                className="w-7 h-7 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -111,133 +113,12 @@ const Register = () => {
         {/* Register Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name */}
-            <div>
-              <label
-                htmlFor="fullName"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                ชื่อ-นามสกุล
-              </label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                placeholder="กรอกชื่อ-นามสกุล"
-                value={formData.fullName}
-                onChange={handleChange}
-                required
-                className="text-black block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-            </div>
+            {/* Personal Info Section */}
+            <PersonalInfoSection formData={formData} setFormData={setFormData} />
 
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                อีเมล
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="example@gmail.com"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="text-black block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-            </div>
+            {/* Address Section */}
+            <AddressSection formData={formData} setFormData={setFormData} />
 
-            {/* Phone */}
-            <div>
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                เบอร์โทรศัพท์
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                placeholder="0812345678"
-                value={formData.phone}
-                onChange={(e) => {
-                  const onlyNums = e.target.value.replace(/[^0-9]/g, "");
-                  setFormData({ ...formData, phone: onlyNums });
-                }}
-                required
-                maxLength={10}
-                className="text-black block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="relative">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                รหัสผ่าน
-              </label>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength={6}
-                className="text-black block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-13 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showPassword ? (
-                  <EyeOffIcon size={20} />
-                ) : (
-                  <EyeIcon size={20} />
-                )}
-              </button>
-            </div>
-
-            {/* Confirm Password */}
-            <div className="relative">
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                ยืนยันรหัสผ่าน
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                minLength={6}
-                className="text-black block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-2 top-13 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showConfirmPassword ? (
-                  <EyeOffIcon size={20} />
-                ) : (
-                  <EyeIcon size={20} />
-                )}
-              </button>
-            </div>
             {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -247,6 +128,7 @@ const Register = () => {
                 <span className="px-4 bg-white text-gray-500">หรือ</span>
               </div>
             </div>
+
             {/* Google Sign Up Button */}
             <button
               type="button"
@@ -278,19 +160,12 @@ const Register = () => {
             {message && (
               <div
                 className={`p-4 rounded-lg ${
-                  isSuccess
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-red-50 border border-red-200"
+                  isSuccess ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   {isSuccess ? (
-                    <svg
-                      className="w-5 h-5 text-green-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -299,12 +174,7 @@ const Register = () => {
                       />
                     </svg>
                   ) : (
-                    <svg
-                      className="w-5 h-5 text-red-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -313,13 +183,7 @@ const Register = () => {
                       />
                     </svg>
                   )}
-                  <p
-                    className={`text-sm font-medium ${
-                      isSuccess ? "text-green-800" : "text-red-800"
-                    }`}
-                  >
-                    {message}
-                  </p>
+                  <p className={`text-sm font-medium ${isSuccess ? "text-green-800" : "text-red-800"}`}>{message}</p>
                 </div>
               </div>
             )}
@@ -376,16 +240,13 @@ const Register = () => {
         {/* Footer Text */}
         <p className="text-center text-sm text-gray-600 mt-6">
           มีบัญชีอยู่แล้ว?{" "}
-          <Link
-            to="/login"
-            className="font-medium text-blue-600 hover:text-blue-700"
-          >
+          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-700">
             เข้าสู่ระบบ
           </Link>
         </p>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Register;
+export default Register
