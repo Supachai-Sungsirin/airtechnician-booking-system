@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Technician from "../models/Technician.js";
+import cloudinary from "../config/cloudinary.js";
 
 // สมัครสมาชิก Customer
 export const registerCustomer = async (req, res) => {
@@ -68,44 +69,41 @@ export const registerTechnician = async (req, res) => {
       province,
       postalCode,
       idCard,
-      selfieWithIdCard,
+      selfieWithIdCard, // <-- Base64 มาจาก frontend
       district,
       serviceArea,
       bio,
       services,
     } = req.body;
 
+    // ตรวจสอบ email ซ้ำ
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email นี้ถูกใช้งานแล้ว" });
-    } // **ตรวจสอบข้อมูลที่จำเป็นทั้งหมด**
-
-    if (
-      !email ||
-      !password ||
-      !fullName ||
-      !address ||
-      !province ||
-      !postalCode
-    ) {
-      return res
-        .status(400)
-        .json({ message: "กรุณากรอกข้อมูลส่วนตัว (รวมถึงที่อยู่) ให้ครบถ้วน" });
-    } // การตรวจสอบเฉพาะทาง
-    if (!district)
-      return res.status(400).json({ message: "กรุณาระบุเขตที่พักอาศัย" });
-    if (
-      !serviceArea ||
-      !Array.isArray(serviceArea) ||
-      serviceArea.length === 0
-    ) {
-      return res
-        .status(400)
-        .json({ message: "กรุณาระบุเขตที่ให้บริการ (อย่างน้อย 1 เขต)" });
     }
 
+    if (!email || !password || !fullName || !address || !province || !postalCode)
+      return res.status(400).json({ message: "กรุณากรอกข้อมูลส่วนตัวให้ครบถ้วน" });
+
+    if (!district)
+      return res.status(400).json({ message: "กรุณาระบุเขตที่พักอาศัย" });
+
+    if (!serviceArea || !Array.isArray(serviceArea) || serviceArea.length === 0)
+      return res.status(400).json({ message: "กรุณาระบุเขตที่ให้บริการ" });
+
+    // 1. เข้ารหัสรหัสผ่าน
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // 2. อัปโหลดภาพขึ้น Cloudinary (ถ้ามี)
+    let selfieUrl = "";
+    if (selfieWithIdCard) {
+      const uploadResponse = await cloudinary.uploader.upload(selfieWithIdCard, {
+        folder: "technician_verification",
+      });
+      selfieUrl = uploadResponse.secure_url;
+    }
+
+    // 3. สร้าง User
     const newUser = new User({
       email,
       password: hashedPassword,
@@ -114,62 +112,40 @@ export const registerTechnician = async (req, res) => {
       address,
       province,
       postalCode,
-      district: district,
+      district,
       role: "technician",
     });
 
-    // 1. บันทึก User
     const savedUser = await newUser.save();
 
-    // 2. บันทึก Technician (อยู่ภายใน try/catch ภายใน)
-    try {
-      const newTechnician = new Technician({
-        userId: savedUser._id,
-        idCard,
-        selfieWithIdCard,
-        serviceArea,
-        bio,
-        services,
-        status: "pending",
-      });
+    // 4. สร้าง Technician พร้อมเก็บ URL ของภาพ
+    const newTechnician = new Technician({
+      userId: savedUser._id,
+      idCard,
+      selfieWithIdCard: selfieUrl, // <-- เก็บ URL จาก Cloud
+      serviceArea,
+      bio,
+      services,
+      status: "pending",
+    });
 
-      await newTechnician.save();
+    await newTechnician.save();
 
-      res.status(201).json({
-        message: "สมัครสมาชิกสำเร็จ (Technician - รออนุมัติ)",
-        technician: {
-          id: newTechnician._id,
-          userId: savedUser._id,
-          email: savedUser.email,
-          status: newTechnician.status,
-        },
-      });
-    } catch (techError) {
-      // !!! ROLLBACK: หาก Technician บันทึกล้มเหลว ให้ลบ User ที่สร้างไปแล้วทิ้ง !!!
-      await User.findByIdAndDelete(savedUser._id);
-
-      console.error(
-        " Error in registerTechnician (Technician save failed, User rolled back):",
-        techError
-      );
-
-      // ตรวจสอบว่าเป็น Validation Error จาก Technician Model หรือไม่
-      if (techError.name === "ValidationError") {
-        return res.status(400).json({
-          message:
-            "ข้อมูลช่างเทคนิคไม่ถูกต้อง (กรุณาตรวจสอบข้อมูล Services หรือ ID Card)",
-          error: techError.message,
-        });
-      }
-
-      res.status(500).json({ message: "เกิดข้อผิดพลาดในการบันทึกข้อมูลช่าง" });
-    }
+    res.status(201).json({
+      message: "สมัครสมาชิกสำเร็จ (Technician - รออนุมัติ)",
+      technician: {
+        id: newTechnician._id,
+        email: savedUser.email,
+        selfieUrl,
+        status: newTechnician.status,
+      },
+    });
   } catch (error) {
-    // Catch สำหรับ Error ทั่วไป (เช่น User.save() ล้มเหลวจาก Mongoose Validation อื่นๆ)
-    console.error(" Error in registerTechnician:", error);
+    console.error("Error in registerTechnician:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
   }
 };
+
 
 export const login = async (req, res) => {
   try {
