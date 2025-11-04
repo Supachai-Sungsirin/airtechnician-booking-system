@@ -1,3 +1,5 @@
+"use client"
+
 export default function SearchTechnicians({
   technicians,
   searchFilters,
@@ -88,7 +90,7 @@ export default function SearchTechnicians({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {technicians.map((technician) => (
             <div
-              key={technician.id}
+              key={technician._id}
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
             >
               <div className="p-6">
@@ -97,7 +99,7 @@ export default function SearchTechnicians({
                     {technician.profileImage ? (
                       <img
                         src={technician.profileImage || "/placeholder.svg"}
-                        alt={technician.displayName}
+                        alt={technician.userId?.fullName}
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (
@@ -105,11 +107,11 @@ export default function SearchTechnicians({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate">{technician.displayName}</h3>
+                    <h3 className="font-semibold text-gray-900 truncate">{technician.userId?.fullName || "ช่าง"}</h3>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-yellow-500">⭐</span>
                       <span className="font-medium text-gray-900">{technician.rating?.toFixed(1) || "N/A"}</span>
-                      <span className="text-gray-400 text-sm">({technician.reviewCount || 0})</span>
+                      <span className="text-gray-400 text-sm">({technician.totalReviews || 0})</span>
                     </div>
                   </div>
                 </div>
@@ -117,21 +119,21 @@ export default function SearchTechnicians({
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2">{technician.bio || "ช่างมืออาชีพ พร้อมให้บริการ"}</p>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {technician.services?.slice(0, 3).map((service, idx) => (
+                  {technician.serviceArea?.slice(0, 3).map((area, idx) => (
                     <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
-                      {service}
+                      {area}
                     </span>
                   ))}
-                  {technician.services?.length > 3 && (
+                  {technician.serviceArea?.length > 3 && (
                     <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                      +{technician.services.length - 3}
+                      +{technician.serviceArea.length - 3}
                     </span>
                   )}
                 </div>
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleViewTechnician(technician.id)}
+                    onClick={() => handleViewTechnician(technician._id)}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                   >
                     ดูโปรไฟล์

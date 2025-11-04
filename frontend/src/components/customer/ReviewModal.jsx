@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react"
 import api from "../../services/api"
 
@@ -14,14 +16,19 @@ export default function ReviewModal({ booking, onClose, onSuccess }) {
 
     try {
       await api.post("/reviews", {
-        bookingId: booking.id,
-        ...formData,
+        bookingId: booking._id,
+        rating: formData.rating,
+        comment: formData.comment,
       })
       alert("ส่งรีวิวเรียบร้อยแล้ว ขอบคุณสำหรับความคิดเห็น!")
       onSuccess()
     } catch (error) {
-      alert("เกิดข้อผิดพลาดในการส่งรีวิว กรุณาลองใหม่อีกครั้ง")
       console.error("Error submitting review:", error)
+      if (error.response && error.response.data && error.response.data.message) {
+        alert(error.response.data.message)
+      } else {
+        alert("เกิดข้อผิดพลาดในการส่งรีวิว กรุณาลองใหม่อีกครั้ง")
+      }
     } finally {
       setLoading(false)
     }
@@ -34,7 +41,7 @@ export default function ReviewModal({ booking, onClose, onSuccess }) {
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">ให้คะแนนและรีวิว</h2>
-              <p className="text-gray-600 mt-1">ช่าง: {booking.technicianName}</p>
+              <p className="text-gray-600 mt-1">ช่าง: {booking.technicianId?.userId?.fullName || "ช่าง"}</p>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
               ×

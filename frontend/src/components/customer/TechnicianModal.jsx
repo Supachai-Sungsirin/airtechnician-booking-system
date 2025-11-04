@@ -1,3 +1,5 @@
+"use client"
+
 export default function TechnicianModal({ technician, onClose, onBook }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -15,7 +17,7 @@ export default function TechnicianModal({ technician, onClose, onBook }) {
               {technician.profileImage ? (
                 <img
                   src={technician.profileImage || "/placeholder.svg"}
-                  alt={technician.displayName}
+                  alt={technician.userId?.fullName}
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
@@ -23,11 +25,11 @@ export default function TechnicianModal({ technician, onClose, onBook }) {
               )}
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-semibold text-gray-900">{technician.displayName}</h3>
+              <h3 className="text-xl font-semibold text-gray-900">{technician.userId?.fullName || "ช่าง"}</h3>
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-yellow-500 text-xl">⭐</span>
                 <span className="font-semibold text-gray-900">{technician.rating?.toFixed(1) || "N/A"}</span>
-                <span className="text-gray-400">({technician.reviewCount || 0} รีวิว)</span>
+                <span className="text-gray-400">({technician.totalReviews || 0} รีวิว)</span>
               </div>
             </div>
           </div>
@@ -39,11 +41,11 @@ export default function TechnicianModal({ technician, onClose, onBook }) {
             </div>
 
             <div>
-              <h4 className="font-semibold text-gray-900 mb-2">บริการที่ให้</h4>
+              <h4 className="font-semibold text-gray-900 mb-2">พื้นที่ให้บริการ</h4>
               <div className="flex flex-wrap gap-2">
-                {technician.services?.map((service, idx) => (
+                {technician.serviceArea?.map((area, idx) => (
                   <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full">
-                    {service}
+                    {area}
                   </span>
                 ))}
               </div>
@@ -58,7 +60,7 @@ export default function TechnicianModal({ technician, onClose, onBook }) {
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-yellow-500">⭐</span>
                         <span className="font-medium">{review.rating}</span>
-                        <span className="text-gray-400 text-sm">• {review.customerName}</span>
+                        <span className="text-gray-400 text-sm">• {review.customerId?.fullName || "ลูกค้า"}</span>
                       </div>
                       <p className="text-gray-600 text-sm">{review.comment}</p>
                     </div>

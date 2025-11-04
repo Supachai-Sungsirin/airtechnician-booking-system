@@ -1,3 +1,5 @@
+"use client"
+
 import api from "../../services/api"
 
 export default function MyBookings({
@@ -6,13 +8,14 @@ export default function MyBookings({
   setSelectedBooking,
   setShowReviewModal,
   fetchMyBookings,
-  serviceTypes,
 }) {
   const getStatusColor = (status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
-      confirmed: "bg-blue-100 text-blue-800",
-      in_progress: "bg-purple-100 text-purple-800",
+      assigned: "bg-blue-100 text-blue-800",
+      accepted: "bg-indigo-100 text-indigo-800",
+      on_the_way: "bg-purple-100 text-purple-800",
+      working: "bg-orange-100 text-orange-800",
       completed: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
     }
@@ -22,25 +25,21 @@ export default function MyBookings({
   const getStatusText = (status) => {
     const texts = {
       pending: "รอการยืนยัน",
-      confirmed: "ยืนยันแล้ว",
-      in_progress: "กำลังดำเนินการ",
+      assigned: "มอบหมายช่างแล้ว",
+      accepted: "ช่างรับงานแล้ว",
+      on_the_way: "ช่างกำลังเดินทาง",
+      working: "กำลังดำเนินการ",
       completed: "เสร็จสิ้น",
       cancelled: "ยกเลิกแล้ว",
     }
     return texts[status] || status
   }
 
-  const getServiceLabel = (value) => {
-    if (!serviceTypes) return value; // ป้องกัน error ถ้า serviceTypes ยังไม่โหลด
-    const service = serviceTypes.find(s => s.value === value);
-    return service ? service.label : value; // ถ้าหาไม่เจอ ก็ให้แสดง value เดิมไปก่อน
-  };
-
   const handleCancelBooking = async (bookingId) => {
     if (!confirm("คุณต้องการยกเลิกการจองนี้ใช่หรือไม่?")) return
 
     try {
-      await api.put(`/bookings/${bookingId}/cancel`)
+      await api.patch(`/bookings/${bookingId}/status`, { status: "cancelled" })
       alert("ยกเลิกการจองเรียบร้อยแล้ว")
       fetchMyBookings()
     } catch (error) {
@@ -77,7 +76,7 @@ export default function MyBookings({
     <div className="space-y-4">
       {bookings.map((booking) => (
         <div
-          key={booking.id}
+          key={booking._id}
           className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
         >
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -87,8 +86,19 @@ export default function MyBookings({
                   👨‍🔧
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{booking.technicianName}</h3>
-                  <p className="text-sm text-gray-600 mt-1">บริการ: {getServiceLabel(booking.serviceType)}</p>
+                  <h3 className="font-semibold text-gray-900">
+                    {booking.technicianId?.userId?.fullName || "กำลังจัดหาช่าง"}
+                  </h3>
+                  <div className="text-sm text-gray-600 mt-1">
+                    <p className="font-medium">บริการ:</p>
+                    {booking.services?.map((service, idx) => (
+                      <p key={idx} className="ml-2">
+                        • {service.serviceId?.name || "บริการ"} ({service.btuRange}) x{service.quantity} - ฿
+                        {service.price}
+                      </p>
+                    ))}
+                    <p className="font-semibold mt-1">รวม: ฿{booking.totalPrice}</p>
+                  </div>
                   <p className="text-sm text-gray-600">
                     วันที่: {new Date(booking.requestedDateTime).toLocaleString("th-TH")}
                   </p>
@@ -105,7 +115,7 @@ export default function MyBookings({
               <div className="flex gap-2">
                 {booking.status === "pending" && (
                   <button
-                    onClick={() => handleCancelBooking(booking.id)}
+                    onClick={() => handleCancelBooking(booking._id)}
                     className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     ยกเลิก

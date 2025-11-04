@@ -9,6 +9,7 @@ import technicianRoutes from "./routes/technicianRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js"
+import serviceRoutes from "./routes/serviceRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -29,6 +30,7 @@ app.use("/technicians", technicianRoutes);
 app.use("/reviews", reviewRoutes);
 app.use("/admin", adminRoutes);
 app.use("/upload", uploadRoutes);
+app.use("/service", serviceRoutes);
 
 
 const PORT = process.env.PORT || 5000;

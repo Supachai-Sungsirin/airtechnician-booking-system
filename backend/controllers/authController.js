@@ -190,3 +190,18 @@ export const login = async (req, res) => {
     res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
   }
 };
+
+export const getMe = async (req, res) => {
+    try {
+        // req.user ถูกตั้งค่าโดย auth middleware ของคุณ
+        // จาก middleware: req.user = { id: user._id, role: user.role }
+        const user = await User.findById(req.user.id).select('-password'); // ไม่ส่ง password กลับไปด้วย
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.status(200).json(user); // ส่งข้อมูลผู้ใช้ทั้งหมดกลับไป
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};

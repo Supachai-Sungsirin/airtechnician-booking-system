@@ -1,5 +1,6 @@
 import express from "express";
-import { registerCustomer, registerTechnician, login } from "../controllers/authController.js";
+import { registerCustomer, registerTechnician, login, getMe } from "../controllers/authController.js"; 
+import { auth } from "../middleware/authMiddleware.js"; 
 
 const router = express.Router();
 
@@ -11,5 +12,9 @@ router.post("/register/technician", registerTechnician);
 
 // เข้าสู่ระบบ
 router.post("/login", login);
+
+// [ใหม่] Protected route สำหรับดึงข้อมูลผู้ใช้ปัจจุบัน
+// ต้องผ่าน auth middleware ก่อน เพื่อให้ req.user มีข้อมูล
+router.get("/me", auth, getMe);
 
 export default router;
