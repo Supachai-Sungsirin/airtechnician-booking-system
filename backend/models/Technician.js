@@ -11,15 +11,24 @@ const technicianSchema = new mongoose.Schema({
   selfieWithIdCard: { type: String },
   serviceArea: { type: [String], required: true }, // เขตที่ให้บริการ
   bio: { type: String },
+  
+  // [แก้ไข] เปลี่ยนจาก enum string เป็น array of ObjectId ที่อ้างอิง Service model
   services: [
     {
-      type: String,
-      enum: ["cleaning", "repair", "install", "maintenance", "refill"],
-      required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service', // [สำคัญ] ตรวจสอบว่า 'Service' ตรงกับชื่อโมเดลบริการของคุณ
+    required: true,
     },
   ],
   rating: { type: Number, default: 0 },
   totalReviews: { type: Number, default: 0 },
+
+  // [แก้ไข] เพิ่ม field active เพื่อให้ controller สามารถกรองช่างที่พร้อมให้บริการได้
+  active: {
+    type: Boolean,
+    default: true,
+  },
+
   status: {
     type: String,
     enum: ["pending", "approved", "rejected"],

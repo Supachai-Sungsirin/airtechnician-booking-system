@@ -1,155 +1,123 @@
-"use client"
+import React from "react"
 
 export default function SearchTechnicians({
-  technicians,
-  searchFilters,
-  setSearchFilters,
-  handleSearch,
-  searchLoading,
-  handleViewTechnician,
-  handleBookNow,
-  serviceTypes,
-  bangkokDistricts,
+  onClose,
+  formData,
+  estimatedPrice,
+  availableTechnicians,
+  selectedTechnician,
+  setSelectedTechnician,
+  setCurrentStep,
+  handleConfirmBooking,
+  loading,
 }) {
   return (
-    <div className="space-y-6">
-      {/* Search Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">ค้นหาช่างแอร์</h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">ประเภทบริการ</label>
-            <select
-              value={searchFilters.service}
-              onChange={(e) => setSearchFilters({ ...searchFilters, service: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">ทั้งหมด</option>
-              {serviceTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.icon} {type.label}
-                </option>
-              ))}
-            </select>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">เลือกช่างที่ต้องการ</h2>
+              <p className="text-gray-600 mt-1">ช่างที่มีเขตและบริการตรงกับความต้องการของคุณ</p>
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
+              ×
+            </button>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">พื้นที่</label>
-            <select
-              value={searchFilters.area}
-              onChange={(e) => setSearchFilters({ ...searchFilters, area: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">ทั้งหมด</option>
-              {bangkokDistricts.map((district) => (
-                <option key={district} value={district}>
-                  {district}
-                </option>
-              ))}
-            </select>
+          {/* Booking Summary */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-2">สรุปการจอง</h3>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p>
+                <span className="font-medium">เขต/อำเภอ:</span> {formData.district}
+              </p>
+              <p>
+                <span className="font-medium">วันเวลา:</span>{" "}
+                {new Date(formData.requestedDateTime).toLocaleString("th-TH")}
+              </p>
+              <p>
+                <span className="font-medium">ราคาประมาณการ:</span> ฿{estimatedPrice.toLocaleString()}
+              </p>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">คะแนนขั้นต่ำ</label>
-            <select
-              value={searchFilters.rating}
-              onChange={(e) => setSearchFilters({ ...searchFilters, rating: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">ทั้งหมด</option>
-              <option value="4.5">⭐ 4.5+</option>
-              <option value="4.0">⭐ 4.0+</option>
-              <option value="3.5">⭐ 3.5+</option>
-              <option value="3.0">⭐ 3.0+</option>
-            </select>
-          </div>
-        </div>
-
-        <button
-          onClick={handleSearch}
-          disabled={searchLoading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {searchLoading ? "กำลังค้นหา..." : "🔍 ค้นหา"}
-        </button>
-      </div>
-
-      {/* Technicians Grid */}
-      {searchLoading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-          <p className="mt-4 text-gray-600">กำลังโหลดข้อมูลช่าง...</p>
-        </div>
-      ) : technicians.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-          <p className="text-gray-500 text-lg">ไม่พบช่างที่ตรงกับเงื่อนไขการค้นหา</p>
-          <p className="text-gray-400 text-sm mt-2">ลองปรับเปลี่ยนตัวกรองและค้นหาใหม่อีกครั้ง</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {technicians.map((technician) => (
-            <div
-              key={technician._id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-            >
-              <div className="p-6">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl flex-shrink-0">
-                    {technician.profileImage ? (
-                      <img
-                        src={technician.profileImage || "/placeholder.svg"}
-                        alt={technician.userId?.fullName}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      "👨‍🔧"
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate">{technician.userId?.fullName || "ช่าง"}</h3>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className="text-yellow-500">⭐</span>
-                      <span className="font-medium text-gray-900">{technician.rating?.toFixed(1) || "N/A"}</span>
-                      <span className="text-gray-400 text-sm">({technician.totalReviews || 0})</span>
+          {/* Technicians List */}
+          <div className="space-y-4 mb-6">
+            {availableTechnicians.length > 0 ? (
+              <>
+                <h3 className="font-semibold text-gray-900">ช่างที่พร้อมให้บริการ ({availableTechnicians.length} คน)</h3>
+                {availableTechnicians.map((tech) => (
+                  <div
+                    key={tech._id}
+                    onClick={() => setSelectedTechnician(tech)}
+                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                      selectedTechnician?._id === tech._id
+                        ? "border-blue-500 bg-blue-50 shadow-md"
+                        : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-gray-900">{tech.name}</h4>
+                          {selectedTechnician?._id === tech._id && (
+                            <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">เลือกแล้ว</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>📞 {tech.phone}</p>
+                          {tech.email && <p>✉️ {tech.email}</p>}
+                          {tech.serviceAreas && tech.serviceAreas.length > 0 && (
+                            <p>📍 พื้นที่ให้บริการ: {tech.serviceAreas.join(", ")}</p>
+                          )}
+                          {tech.specializations && tech.specializations.length > 0 && (
+                            <p>🔧 ความเชี่ยวชาญ: {tech.specializations.join(", ")}</p>
+                          )}
+                          {tech.rating && (
+                            <p>
+                              ⭐ คะแนน: {tech.rating.toFixed(1)} ({tech.completedJobs || 0} งาน)
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{technician.bio || "ช่างมืออาชีพ พร้อมให้บริการ"}</p>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {technician.serviceArea?.slice(0, 3).map((area, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full">
-                      {area}
-                    </span>
-                  ))}
-                  {technician.serviceArea?.length > 3 && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                      +{technician.serviceArea.length - 3}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleViewTechnician(technician._id)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-                  >
-                    ดูโปรไฟล์
-                  </button>
-                  <button
-                    onClick={() => handleBookNow(technician)}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                  >
-                    จองเลย
-                  </button>
-                </div>
+                ))}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-400 text-5xl mb-4">🔍</div>
+                <h3 className="font-semibold text-gray-900 mb-2">ไม่พบช่างในเขตของคุณ</h3>
+                <p className="text-gray-600 text-sm">ระบบจะดำเนินการค้นหาช่างและแจ้งกลับให้คุณทราบในภายหลัง</p>
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={() => setCurrentStep(1)}
+              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              ← ย้อนกลับ
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmBooking}
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "กำลังจอง..." : selectedTechnician ? "ยืนยันการจองกับช่างที่เลือก" : "ยืนยันการจอง"}
+            </button>
+          </div>
+
+          {!selectedTechnician && availableTechnicians.length > 0 && (
+            <p className="text-xs text-gray-500 text-center mt-3">*หากไม่เลือกช่าง ระบบจะมอบหมายช่างที่เหมาะสมให้อัตโนมัติ</p>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

@@ -10,6 +10,7 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js"
 import serviceRoutes from "./routes/serviceRoutes.js";
+import searchRoutes from "./routes/searchRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -31,6 +32,7 @@ app.use("/reviews", reviewRoutes);
 app.use("/admin", adminRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/service", serviceRoutes);
+app.use("/search", searchRoutes);
 
 
 const PORT = process.env.PORT || 5000;
