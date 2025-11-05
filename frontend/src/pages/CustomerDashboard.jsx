@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import api from "../services/api"
@@ -31,11 +29,34 @@ export default function CustomerDashboard() {
       return
     }
 
-    const userData = JSON.parse(localStorage.getItem("user") || "{}")
-    setUser(userData)
+// 1. สร้างฟังก์ชัน async เพื่อดึงข้อมูลโปรไฟล์และ
+    const fetchData = async () => {
+      try {
+        // 2. ดึงข้อมูลผู้ใช้ล่าสุดจาก DB (จากไฟล์ BookingModal คุณใช้ /auth/me)
+        const userResponse = await api.get("/auth/me")
+        const freshUserData = userResponse.data
 
-    fetchMyBookings()
-  }, [navigate])
+        // 3. ตั้งค่า state ด้วยข้อมูลใหม่
+        setUser(freshUserData)
+
+        // 4. อัปเดต localStorage ให้เป็นข้อมูลล่าสุด
+        localStorage.setItem("user", JSON.stringify(freshUserData))
+
+      } catch (error) {
+        console.error("Failed to fetch fresh user profile:", error)
+        // 5. ถ้าดึงไม่สำเร็จ (เช่น Token หมดอายุ) ให้ใช้ของเก่าใน localStorage ไปก่อน
+        const userData = JSON.parse(localStorage.getItem("user") || "{}")
+        setUser(userData)
+      }
+
+      // 6. ดึงข้อมูลการจอง (หลังจากดึงโปรไฟล์แล้ว)
+      fetchMyBookings()
+    }
+
+    // 7. เรียกใช้ฟังก์ชันที่สร้างขึ้น
+    fetchData()
+
+  }, [navigate])
 
   const fetchMyBookings = async () => {
     setBookingsLoading(true)
@@ -75,7 +96,6 @@ export default function CustomerDashboard() {
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">{user?.fullName || "ผู้ใช้งาน"}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
               </div>
               <button
                 onClick={handleLogout}
