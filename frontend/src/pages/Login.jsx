@@ -52,6 +52,8 @@ const Login = () => {
           window.location.href = "/technician/dashboard";
         } else if (res.data.user.role === "customer") {
           window.location.href = "/CustomerDashboard";
+        } else if (res.data.user.role === "admin") {
+          window.location.href = "/AdminDashboard";
         } else {
           window.location.href = "/";
         }
