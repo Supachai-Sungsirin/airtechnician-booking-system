@@ -16,6 +16,7 @@ import {
   Droplets,
   ThermometerSun,
   ArrowRight,
+  MapPinHouse,
 } from "lucide-react"
 
 export default function Home() {
@@ -128,12 +129,20 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6 text-balance">
-                แพลตฟอร์มจองช่างแอร์
+                แพลตฟอร์มจองช่างแอร์<span className="text-primary">ในกรุงเทพ</span>
                 <span className="text-primary"> ที่คุณไว้วางใจได้</span>
               </h1>
               <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed text-pretty mb-8">
-                เชื่อมต่อคุณกับช่างแอร์มืออาชีพในพื้นที่ของคุณ จองง่าย รวดเร็ว ปลอดภัย ด้วยระบบออนไลน์ที่ทันสมัย
+                เชื่อมต่อคุณกับช่างแอร์มืออาชีพในกรุงเทพและ จองง่าย รวดเร็ว ปลอดภัย ด้วยระบบออนไลน์ที่ทันสมัย
               </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium mb-6">
+                {/* <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg> */}
+                <MapPinHouse className="w-4 h-4" />
+                ให้บริการในกรุงเทพเท่านั้น
+              </div>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a
                   href="/register"

@@ -1,30 +1,36 @@
-import React from "react"
-import { Link, useLocation } from "react-router-dom"
-import { Wind, Menu, X } from "lucide-react"
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Wind, Menu, X } from "lucide-react";
+import logoImage from "../assets/logo.png";
 
 export default function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false)
-  const location = useLocation()
-  const isHomePage = location.pathname === "/"
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
   const handleSmoothScroll = (e, targetId) => {
-    e.preventDefault()
-    const element = document.getElementById(targetId)
+    e.preventDefault();
+    const element = document.getElementById(targetId);
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" })
-      setIsMenuOpen(false)
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      setIsMenuOpen(false);
     }
-  }
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Wind className="w-6 h-6 text-primary-foreground" />
-            </div>
+          <Link
+            to="/"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <img
+              src={logoImage}
+              alt="CoolQ Logo"
+              className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+            />
             <span className="text-xl font-bold text-foreground">CoolQ</span>
           </Link>
 
@@ -56,13 +62,22 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link
+                  to="/"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   หน้าแรก
                 </Link>
-                <Link to="/#about" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link
+                  to="/#about"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   เกี่ยวกับเรา
                 </Link>
-                <Link to="/#services" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link
+                  to="/#services"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   บริการ
                 </Link>
               </>
@@ -77,7 +92,10 @@ export default function Navbar() {
 
           {/* Auth Buttons - Desktop */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/login" className="px-4 py-2 text-foreground hover:text-primary transition-colors">
+            <Link
+              to="/login"
+              className="px-4 py-2 text-foreground hover:text-primary transition-colors"
+            >
               เข้าสู่ระบบ
             </Link>
             <Link
@@ -93,7 +111,11 @@ export default function Navbar() {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="md:hidden p-2 text-foreground hover:bg-muted rounded-lg transition-colors"
           >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
 
@@ -178,5 +200,5 @@ export default function Navbar() {
         )}
       </div>
     </nav>
-  )
+  );
 }

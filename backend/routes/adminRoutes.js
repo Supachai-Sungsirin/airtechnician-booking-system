@@ -1,32 +1,67 @@
 import express from "express";
 import { auth, isAdmin } from "../middleware/authMiddleware.js";
 import {
-  updateTechnicianStatus,
-  addService,
-  addAdmin,
-  getServices,
-  updateService,
-  deleteService,
+    updateTechnicianStatus,
+    addService,
+    addAdmin,
+    getServices,
+    updateService,
+    deleteService,
+    getDashboardStats,
+    getPendingTechnicians,
+    getAllCustomers,
+    getAllTechnicians,
+    getAllAdmins,
+    getUserDetail,
+    updateUser,
+    updateTechnicianInfo,
 } from "../controllers/adminController.js";
 
 const router = express.Router();
 
-// Admin เพิ่ม Admin คนใหม่
-router.post("/", auth, isAdmin, addAdmin);
+/*  =======================
+        DASHBOARD ROUTES 
+    ======================= */
+router.get("/dashboard/stats", auth, isAdmin, getDashboardStats);
 
-// Admin อนุมัติช่าง
-router.patch("/technician/:id/status", auth, isAdmin, updateTechnicianStatus);
+/*  =======================
+        ADMIN MANAGEMENT
+    ======================= */
+router.post("/add-admin", auth, isAdmin, addAdmin);
+router.get("/admins", auth, isAdmin, getAllAdmins);
 
-// Admin เพิ่ม งานบริการ ใหม่
-router.post("/service", auth, isAdmin, addService);
+/*  =======================
+        TECHNICIAN MANAGEMENT
+    ======================= */
+// อนุมัติ/ปฏิเสธช่าง
+router.put("/technicians/:id", auth, isAdmin, updateTechnicianStatus);
 
-// ดึงงานบริการทั้งหมด
-router.get("/allservices", auth, isAdmin, getServices);
+// ดึงช่างที่รออนุมัติ
+router.get("/technicians/pending", auth, isAdmin, getPendingTechnicians);
 
-// แก้ไข งานบริการ
-router.patch("/service/:id", auth, isAdmin, updateService);
+// ดึงช่างทั้งหมด
+router.get("/technicians", auth, isAdmin, getAllTechnicians);
 
-// ลบ งานบริการ
-router.delete("/service/:id", auth, isAdmin, deleteService);
+// อัปเดตข้อมูลช่าง (เช่น แก้บริการ/โซนบริการ)
+router.patch("/technician/:id", auth, isAdmin, updateTechnicianInfo);
+
+/*  =======================
+        CUSTOMER MANAGEMENT
+    ======================= */
+router.get("/customers", auth, isAdmin, getAllCustomers);
+
+/*  =======================
+        USER MANAGEMENT     (ใช้กับทั้ง admin/customer/technician)
+    ======================= */
+router.get("/user/:id", auth, isAdmin, getUserDetail);
+router.patch("/user/:id", auth, isAdmin, updateUser);
+
+/*  =======================
+        SERVICE MANAGEMENT
+    ======================= */
+router.post("/services", auth, isAdmin, addService);
+router.get("/services", auth, isAdmin, getServices);
+router.put("/services/:id", auth, isAdmin, updateService);
+router.delete("/services/:id", auth, isAdmin, deleteService);
 
 export default router;

@@ -1,5 +1,6 @@
-import { Wind, Facebook, Instagram, Mail, Phone, MapPin } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Wind, Facebook, Instagram, Mail, Phone, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
+import logoImage from "../assets/logo.png";
 
 export default function Footer() {
   return (
@@ -9,13 +10,22 @@ export default function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Wind className="w-6 h-6 text-primary-foreground" />
-              </div>
+              {/* Logo */}
+              <Link
+                to="/"
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src={logoImage}
+                  alt="CoolQ Logo"
+                  className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+                />
+              </Link>
               <span className="text-xl font-bold text-foreground">CoolQ</span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              แพลตฟอร์มจองช่างแอร์ออนไลน์ที่เชื่อถือได้ เชื่อมต่อคุณกับช่างมืออาชีพ
+              แพลตฟอร์มจองช่างแอร์ออนไลน์ที่เชื่อถือได้
+              เชื่อมต่อคุณกับช่างมืออาชีพ
             </p>
           </div>
 
@@ -24,17 +34,26 @@ export default function Footer() {
             <h3 className="font-semibold text-foreground mb-4">เมนูหลัก</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                <Link
+                  to="/"
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                >
                   หน้าแรก
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                <Link
+                  to="/about"
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                >
                   เกี่ยวกับเรา
                 </Link>
               </li>
               <li>
-                <Link to="/services" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                <Link
+                  to="/services"
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                >
                   บริการ
                 </Link>
               </li>
@@ -54,22 +73,34 @@ export default function Footer() {
             <h3 className="font-semibold text-foreground mb-4">ช่วยเหลือ</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                >
                   คำถามที่พบบ่อย
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                >
                   นโยบายความเป็นส่วนตัว
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                >
                   เงื่อนไขการใช้งาน
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors text-sm">
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm"
+                >
                   ติดต่อเรา
                 </a>
               </li>
@@ -115,5 +146,5 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }
