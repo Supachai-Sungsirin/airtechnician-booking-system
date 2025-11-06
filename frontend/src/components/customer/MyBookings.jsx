@@ -37,7 +37,7 @@ export default function MyBookings({
     if (!confirm("คุณต้องการยกเลิกการจองนี้ใช่หรือไม่?")) return
 
     try {
-      await api.patch(`/bookings/${bookingId}/status`, { status: "cancelled" })
+      await api.patch(`/booking/${bookingId}/status`, { status: "cancelled" })
       alert("ยกเลิกการจองเรียบร้อยแล้ว")
       fetchMyBookings()
     } catch (error) {
