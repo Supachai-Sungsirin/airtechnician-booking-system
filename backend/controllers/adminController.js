@@ -248,6 +248,7 @@ export const getPendingTechnicians = async (req, res) => {
     // อาจต้อง populate ข้อมูล User (ชื่อ, อีเมล, เบอร์โทร) เข้ามาด้วย
     const pendingTechnicians = await Technician.find({ status: "pending" })
       .populate("userId", "fullName email phone") // สมมติว่า Technician model มี field ชื่อ userId
+      .populate("services", "name")
       .sort({ createdAt: 1 });
 
     // จัดรูปแบบข้อมูลให้เหมือนกับที่ Frontend คาดหวัง

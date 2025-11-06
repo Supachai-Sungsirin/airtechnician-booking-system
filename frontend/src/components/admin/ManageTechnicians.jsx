@@ -164,13 +164,17 @@ export default function ManageTechnicians() {
                         <p className="text-sm text-gray-900">{technician.idCard}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">งานบริการ</p>
-                        <p className="text-sm text-gray-900">{technician.service?.map((area, index) => (
-                          <span key={index} className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded">
-                            {area}
-                          </span>
-                        ))}</p>
-                      </div>
+                        <p className="text-sm font-medium text-gray-700 mb-1">งานบริการ</p>
+                        <p className="text-sm text-gray-900">
+                            {technician.service?.map((serviceItem, index) => (
+                          <span 
+                                key={index} 
+                                className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded mr-2 mb-1 inline-block" // เพิ่ม mr-2, mb-1, inline-block เพื่อจัดรูปแบบ tag
+                          >
+                            {serviceItem.name}
+                          </span>
+                        ))}</p>
+                      </div>
                     </div>
 
                     <div className="mb-4">

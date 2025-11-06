@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Technician from "../models/Technician.js";
-import cloudinary from "../config/cloudinary.js";
+import Services from "../models/Service.js";
 
 // สมัครสมาชิก Customer
 export const registerCustomer = async (req, res) => {
@@ -57,6 +57,20 @@ export const registerCustomer = async (req, res) => {
   }
 };
 
+// ดึงรายการบริการที่มีอยู่
+export const getAvailableServices = async (req, res) => {
+  try {
+    const services = await Services.find({ active: true }).sort({ name: 1 }).select("_id name description options");
+    res.json({
+      success: true,
+      data: services
+    });
+  } catch (error) {
+    console.error("Get available services error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการดึงข้อมูลบริการ" });
+  }
+};
+
 // สมัครสมาชิก Technician
 export const registerTechnician = async (req, res) => {
   try {
@@ -69,7 +83,7 @@ export const registerTechnician = async (req, res) => {
       province,
       postalCode,
       idCard,
-      selfieWithIdCard, // <-- Base64 มาจาก frontend
+      selfieWithIdCard,
       district,
       serviceArea,
       bio,
@@ -91,17 +105,25 @@ export const registerTechnician = async (req, res) => {
     if (!serviceArea || !Array.isArray(serviceArea) || serviceArea.length === 0)
       return res.status(400).json({ message: "กรุณาระบุเขตที่ให้บริการ" });
 
+    if (!services || !Array.isArray(services) || services.length === 0) {
+        return res.status(400).json({ message: "กรุณาเลือกงานบริการที่ต้องการ" });
+    }
+
+    // ตรวจสอบว่า services ID ที่ส่งมามีอยู่จริงและเป็น ObjectId ที่ถูกต้อง
+    const existingServices = await Services.find({
+        _id: { $in: services }, // ตรวจสอบว่า ID เหล่านี้มีอยู่ใน Service Model หรือไม่
+        active: true, // ตรวจสอบเฉพาะบริการที่เปิดใช้งานอยู่
+    }).select('_id');
+
+    if (existingServices.length !== services.length) {
+        // หากจำนวน ID ที่พบไม่เท่ากับจำนวน ID ที่ส่งมา แสดงว่ามี ID ที่ไม่ถูกต้องหรือไม่มีอยู่ในระบบ
+        return res.status(400).json({ message: "มีงานบริการที่เลือกไม่ถูกต้อง หรือไม่มีในระบบ" });
+    }
+
     // 1. เข้ารหัสรหัสผ่าน
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 2. อัปโหลดภาพขึ้น Cloudinary (ถ้ามี)
-    let selfieUrl = "";
-    if (selfieWithIdCard) {
-      const uploadResponse = await cloudinary.uploader.upload(selfieWithIdCard, {
-        folder: "technician_verification",
-      });
-      selfieUrl = uploadResponse.secure_url;
-    }
+    const selfieUrl = selfieWithIdCard;
 
     // 3. สร้าง User
     const newUser = new User({
@@ -122,7 +144,7 @@ export const registerTechnician = async (req, res) => {
     const newTechnician = new Technician({
       userId: savedUser._id,
       idCard,
-      selfieWithIdCard: selfieUrl, // <-- เก็บ URL จาก Cloud
+      selfieWithIdCard: selfieUrl,
       serviceArea,
       bio,
       services,
@@ -141,9 +163,14 @@ export const registerTechnician = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error in registerTechnician:", error);
-    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
-  }
+    // ตรวจสอบ Mongoose Validation Error
+    if (error.name === "ValidationError") {
+        const messages = Object.values(error.errors).map((val) => val.message);
+        return res.status(400).json({ message: "ข้อมูลไม่ถูกต้อง: " + messages.join(", ") });
+    }
+    console.error("Error in registerTechnician:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+  }
 };
 
 
@@ -205,3 +232,34 @@ export const getMe = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+export const updateMyProfile = async (req, res) => {
+  // 1. ดึงข้อมูลที่อนุญาตให้อัปเดตจาก req.body
+  const { fullName, phone, address, district, province, postalCode } = req.body
+
+  try {
+    // 2. ค้นหา User และอัปเดต
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id, // ID ผู้ใช้ที่ได้จาก authMiddleware
+      {
+        fullName,
+        phone,
+        address,
+        district,
+        province,
+        postalCode,
+      },
+      { new: true, runValidators: true }, // new: true เพื่อให้ส่งข้อมูลใหม่กลับไป
+    ).select('-password')
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    // 3. ส่งข้อมูลที่อัปเดตแล้วกลับไปให้ Frontend
+    res.json(updatedUser)
+  } catch (error) {
+    console.error('Error updating profile:', error)
+    res.status(500).json({ message: 'Error updating profile' })
+  }
+}
