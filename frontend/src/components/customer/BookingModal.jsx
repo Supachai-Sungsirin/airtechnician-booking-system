@@ -232,7 +232,7 @@ export default function BookingModal({ onClose, onSuccess }) {
         bookingData.preferredTechnicianId = selectedTechnician._id
       }
 
-      const bookingResponse = await api.post("/bookings", bookingData)
+      const bookingResponse = await api.post("/booking", bookingData)
 
       const { message, assignedTechnician, totalPrice } = bookingResponse.data
 
