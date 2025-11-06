@@ -4,19 +4,20 @@ import api from "../services/api"
 import MyBookings from "../components/customer/MyBookings"
 import BookingModal from "../components/customer/BookingModal"
 import ReviewModal from "../components/customer/ReviewModal"
+import ProfileSection from "../components/customer/profileSection"
 
 export default function CustomerDashboard() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
 
+  const [activeTab, setActiveTab] = useState("bookings") // "bookings" or "profile"
+
   // Bookings state
   const [bookings, setBookings] = useState([])
   const [bookingsLoading, setBookingsLoading] = useState(false)
 
-  // Selected technician for booking
-  const [selectedTechnician, setSelectedTechnician] = useState(null)
+  // Modals state
   const [showBookingModal, setShowBookingModal] = useState(false)
-  const [showTechnicianModal, setShowTechnicianModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState(null)
 
@@ -29,39 +30,35 @@ export default function CustomerDashboard() {
       return
     }
 
-// 1. สร้างฟังก์ชัน async เพื่อดึงข้อมูลโปรไฟล์และ
     const fetchData = async () => {
       try {
-        // 2. ดึงข้อมูลผู้ใช้ล่าสุดจาก DB (จากไฟล์ BookingModal คุณใช้ /auth/me)
+        // Fetch fresh user data from database
         const userResponse = await api.get("/auth/me")
         const freshUserData = userResponse.data
 
-        // 3. ตั้งค่า state ด้วยข้อมูลใหม่
+        // Update state with fresh data
         setUser(freshUserData)
 
-        // 4. อัปเดต localStorage ให้เป็นข้อมูลล่าสุด
+        // Update localStorage with latest data
         localStorage.setItem("user", JSON.stringify(freshUserData))
-
       } catch (error) {
         console.error("Failed to fetch fresh user profile:", error)
-        // 5. ถ้าดึงไม่สำเร็จ (เช่น Token หมดอายุ) ให้ใช้ของเก่าใน localStorage ไปก่อน
-        const userData = JSON.parse(localStorage.getItem("user") || "{}")
-        setUser(userData)
+        // Fallback to localStorage if API fails
+        const userData = JSON.parse(localStorage.getItem("user") || "{}")
+        setUser(userData)
       }
 
-      // 6. ดึงข้อมูลการจอง (หลังจากดึงโปรไฟล์แล้ว)
+      // Fetch bookings after profile
       fetchMyBookings()
     }
 
-    // 7. เรียกใช้ฟังก์ชันที่สร้างขึ้น
     fetchData()
-
-  }, [navigate])
+  }, [navigate])
 
   const fetchMyBookings = async () => {
     setBookingsLoading(true)
     try {
-      const response = await api.get("/bookings/customer")
+      const response = await api.get("/booking/customer")
       setBookings(response.data)
     } catch (error) {
       console.error("Error fetching bookings:", error)
@@ -108,34 +105,62 @@ export default function CustomerDashboard() {
         </div>
       </header>
 
-      {/* Tabs */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">การจองของฉัน</h2>
-              <p className="text-sm text-gray-600 mt-1">ระบบจะแมทช์ช่างที่เหมาะสมให้อัตโนมัติตามเขตของคุณ</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex gap-6">
+              <button
+                onClick={() => setActiveTab("bookings")}
+                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "bookings"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                การจองของฉัน
+              </button>
+              <button
+                onClick={() => setActiveTab("profile")}
+                className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "profile"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                โปรไฟล์
+              </button>
             </div>
-            <button
-              onClick={() => setShowBookingModal(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-            >
-              <span className="text-xl">+</span>
-              จองบริการใหม่
-            </button>
+            {activeTab === "bookings" && (
+              <button
+                onClick={() => setShowBookingModal(true)}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+              >
+                <span className="text-xl">+</span>
+                จองบริการใหม่
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <MyBookings
-          bookings={bookings}
-          bookingsLoading={bookingsLoading}
-          setSelectedBooking={setSelectedBooking}
-          setShowReviewModal={setShowReviewModal}
-          fetchMyBookings={fetchMyBookings}
-        />
+        {activeTab === "bookings" ? (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">การจองของฉัน</h2>
+              <p className="text-sm text-gray-600 mt-1">ระบบจะแมทช์ช่างที่เหมาะสมให้อัตโนมัติตามเขตของคุณ</p>
+            </div>
+            <MyBookings
+              bookings={bookings}
+              bookingsLoading={bookingsLoading}
+              setSelectedBooking={setSelectedBooking}
+              setShowReviewModal={setShowReviewModal}
+              fetchMyBookings={fetchMyBookings}
+            />
+          </div>
+        ) : (
+          <ProfileSection user={user}/>
+        )}
       </main>
 
       {/* Modals */}
