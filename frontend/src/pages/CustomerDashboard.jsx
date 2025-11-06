@@ -1,78 +1,79 @@
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import api from "../services/api"
-import MyBookings from "../components/customer/MyBookings"
-import BookingModal from "../components/customer/BookingModal"
-import ReviewModal from "../components/customer/ReviewModal"
-import ProfileSection from "../components/customer/profileSection"
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
+import MyBookings from "../components/customer/MyBookings";
+import BookingModal from "../components/customer/BookingModal";
+import ReviewModal from "../components/customer/ReviewModal";
+import ProfileSection from "../components/customer/profileSection";
+import logoImage from "../assets/logo.png";
 
 export default function CustomerDashboard() {
-  const navigate = useNavigate()
-  const [user, setUser] = useState(null)
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
 
-  const [activeTab, setActiveTab] = useState("bookings") // "bookings" or "profile"
+  const [activeTab, setActiveTab] = useState("bookings"); // "bookings" or "profile"
 
   // Bookings state
-  const [bookings, setBookings] = useState([])
-  const [bookingsLoading, setBookingsLoading] = useState(false)
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
 
   // Modals state
-  const [showBookingModal, setShowBookingModal] = useState(false)
-  const [showReviewModal, setShowReviewModal] = useState(false)
-  const [selectedBooking, setSelectedBooking] = useState(null)
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    const role = localStorage.getItem("role")
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
 
     if (!token || role !== "customer") {
-      navigate("/login")
-      return
+      navigate("/login");
+      return;
     }
 
     const fetchData = async () => {
       try {
         // Fetch fresh user data from database
-        const userResponse = await api.get("/auth/me")
-        const freshUserData = userResponse.data
+        const userResponse = await api.get("/auth/me");
+        const freshUserData = userResponse.data;
 
         // Update state with fresh data
-        setUser(freshUserData)
+        setUser(freshUserData);
 
         // Update localStorage with latest data
-        localStorage.setItem("user", JSON.stringify(freshUserData))
+        localStorage.setItem("user", JSON.stringify(freshUserData));
       } catch (error) {
-        console.error("Failed to fetch fresh user profile:", error)
+        console.error("Failed to fetch fresh user profile:", error);
         // Fallback to localStorage if API fails
-        const userData = JSON.parse(localStorage.getItem("user") || "{}")
-        setUser(userData)
+        const userData = JSON.parse(localStorage.getItem("user") || "{}");
+        setUser(userData);
       }
 
       // Fetch bookings after profile
-      fetchMyBookings()
-    }
+      fetchMyBookings();
+    };
 
-    fetchData()
-  }, [navigate])
+    fetchData();
+  }, [navigate]);
 
   const fetchMyBookings = async () => {
-    setBookingsLoading(true)
+    setBookingsLoading(true);
     try {
-      const response = await api.get("/booking/customer")
-      setBookings(response.data)
+      const response = await api.get("/booking/customer");
+      setBookings(response.data);
     } catch (error) {
-      console.error("Error fetching bookings:", error)
+      console.error("Error fetching bookings:", error);
     } finally {
-      setBookingsLoading(false)
+      setBookingsLoading(false);
     }
-  }
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("role")
-    localStorage.removeItem("user")
-    navigate("/login")
-  }
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,18 +82,21 @@ export default function CustomerDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl">❄️</span>
-              </div>
+              <img
+                src={logoImage}
+                alt="CoolQ Logo"
+                className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center"
+              />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">CoolTech</h1>
+                <h1 className="text-xl font-bold text-gray-900">CoolQ</h1>
                 <p className="text-xs text-gray-500">Customer Dashboard</p>
               </div>
             </div>
-
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">{user?.fullName || "ผู้ใช้งาน"}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {user?.fullName || "ผู้ใช้งาน"}
+                </p>
               </div>
               <button
                 onClick={handleLogout}
@@ -148,7 +152,9 @@ export default function CustomerDashboard() {
           <div>
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">การจองของฉัน</h2>
-              <p className="text-sm text-gray-600 mt-1">ระบบจะแมทช์ช่างที่เหมาะสมให้อัตโนมัติตามเขตของคุณ</p>
+              <p className="text-sm text-gray-600 mt-1">
+                ระบบจะแมทช์ช่างที่เหมาะสมให้อัตโนมัติตามเขตของคุณ
+              </p>
             </div>
             <MyBookings
               bookings={bookings}
@@ -159,7 +165,7 @@ export default function CustomerDashboard() {
             />
           </div>
         ) : (
-          <ProfileSection user={user}/>
+          <ProfileSection user={user} />
         )}
       </main>
 
@@ -168,8 +174,8 @@ export default function CustomerDashboard() {
         <BookingModal
           onClose={() => setShowBookingModal(false)}
           onSuccess={() => {
-            setShowBookingModal(false)
-            fetchMyBookings()
+            setShowBookingModal(false);
+            fetchMyBookings();
           }}
         />
       )}
@@ -179,11 +185,11 @@ export default function CustomerDashboard() {
           booking={selectedBooking}
           onClose={() => setShowReviewModal(false)}
           onSuccess={() => {
-            setShowReviewModal(false)
-            fetchMyBookings()
+            setShowReviewModal(false);
+            fetchMyBookings();
           }}
         />
       )}
     </div>
-  )
+  );
 }
