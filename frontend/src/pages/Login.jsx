@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar"
 import api from "../services/api";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -10,6 +10,7 @@ const Login = () => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleGoogleSignup = () => {
     // Redirect to Google OAuth endpoint
@@ -153,6 +154,7 @@ const Login = () => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  {/* ไอคอนกุญแจเดิม */}
                   <svg
                     className="h-5 w-5 text-gray-400"
                     fill="none"
@@ -169,13 +171,26 @@ const Login = () => {
                 </div>
                 <input
                   id="password"
-                  type="password"
+                  // แก้ไข: ใช้ type ตาม State showPassword
+                  type={showPassword ? "text" : "password"} 
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="text-black block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  // เพิ่ม padding ด้านขวาเพื่อไม่ให้ทับไอคอนตา
+                  className="text-black block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
                 />
+                
+                {/* START: เพิ่มปุ่มสลับการแสดงผลรหัสผ่าน */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                >
+                  {/* แสดง EyeIcon หรือ EyeOffIcon ตาม State */}
+                  {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                </button>
+                {/* END: ปุ่มสลับการแสดงผลรหัสผ่าน */}
               </div>
             </div>
 
@@ -333,7 +348,7 @@ const Login = () => {
               สมัครสมาชิกลูกค้า
             </Link>
             <Link
-              to="/register-technician"
+              to="/technician-register"
               className="w-full block text-center bg-blue-50 text-blue-700 py-3 px-4 rounded-lg font-medium hover:bg-blue-100 border border-blue-200 transition-all"
             >
               สมัครเป็นช่างกับเรา

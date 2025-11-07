@@ -156,7 +156,6 @@ export const updateService = async (req, res) => {
 
     res.json({ message: "อัปเดตบริการสำเร็จ", service });
   } catch (error) {
-
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((val) => val.message);
       console.error("Mongoose Validation Error:", messages);
@@ -241,6 +240,32 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
+// ดึงการจองทั้งหมด (สำหรับ Admin)
+export const getAllBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find()
+      .populate("customerId", "fullName email phone district")
+      .populate({
+        path: "technicianId",
+        select: "userId",
+        populate: { path: "userId", select: "fullName phone email" },
+      })
+      .populate({
+        path: "services.serviceId",
+        select: "name",
+      })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: bookings,
+    });
+  } catch (error) {
+    console.error("Error getBookings:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // ดึงรายการช่างที่รออนุมัติทั้งหมด (status: pending)
 export const getPendingTechnicians = async (req, res) => {
   try {
@@ -274,11 +299,13 @@ export const getPendingTechnicians = async (req, res) => {
 // ดึงรายชื่อลูกค้าทั้งหมด
 export const getAllCustomers = async (req, res) => {
   try {
-    const customers = await User.find({ role: "customer" }).sort({ createdAt: -1 });
+    const customers = await User.find({ role: "customer" }).sort({
+      createdAt: -1,
+    });
 
     res.json({
       success: true,
-      data: customers
+      data: customers,
     });
   } catch (error) {
     console.error("Get customers error:", error);
@@ -293,7 +320,7 @@ export const getAllAdmins = async (req, res) => {
 
     res.json({
       success: true,
-      data: admins
+      data: admins,
     });
   } catch (error) {
     console.error("Get admins error:", error);
@@ -305,12 +332,15 @@ export const getAllAdmins = async (req, res) => {
 export const getAllTechnicians = async (req, res) => {
   try {
     const technicians = await Technician.find()
-      .populate("userId", "fullName email phone address district province postalCode createdAt")
+      .populate(
+        "userId",
+        "fullName email phone address district province postalCode createdAt"
+      )
       .sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      data: technicians
+      data: technicians,
     });
   } catch (error) {
     console.error("Get technicians error:", error);
@@ -328,12 +358,13 @@ export const getUserDetail = async (req, res) => {
     let technician = null;
 
     if (user.role === "technician") {
-      technician = await Technician.findOne({ userId: user._id });
+      technician = await Technician.findOne({ userId: user._id })
+      .populate("services", "name");
     }
 
     res.json({
       success: true,
-      data: { user, technician }
+      data: { user, technician },
     });
   } catch (error) {
     console.error("Get user detail error:", error);
@@ -344,7 +375,14 @@ export const getUserDetail = async (req, res) => {
 // อัปเดตข้อมูล user
 export const updateUser = async (req, res) => {
   try {
-    const fields = ["fullName","phone","address","district","province","postalCode"];
+    const fields = [
+      "fullName",
+      "phone",
+      "address",
+      "district",
+      "province",
+      "postalCode",
+    ];
     const updateData = {};
 
     fields.forEach((field) => {
@@ -360,7 +398,7 @@ export const updateUser = async (req, res) => {
     res.json({
       success: true,
       message: "อัปเดตข้อมูลสำเร็จ",
-      data: updatedUser
+      data: updatedUser,
     });
   } catch (error) {
     console.error("Update user error:", error);
@@ -372,7 +410,8 @@ export const updateUser = async (req, res) => {
 export const updateTechnicianInfo = async (req, res) => {
   try {
     const technician = await Technician.findById(req.params.id);
-    if (!technician) return res.status(404).json({ message: "ไม่พบข้อมูลช่าง" });
+    if (!technician)
+      return res.status(404).json({ message: "ไม่พบข้อมูลช่าง" });
 
     if (req.body.serviceArea) technician.serviceArea = req.body.serviceArea;
     if (req.body.services) technician.services = req.body.services;
@@ -383,9 +422,8 @@ export const updateTechnicianInfo = async (req, res) => {
     res.json({
       success: true,
       message: "อัปเดตข้อมูลช่างสำเร็จ",
-      data: technician
+      data: technician,
     });
-
   } catch (error) {
     console.error("Update technician error:", error);
     res.status(500).json({ message: "เกิดข้อผิดพลาด" });

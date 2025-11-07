@@ -5,6 +5,7 @@ import ManageTechnicians from "../components/admin/ManageTechnicians";
 import ManageServices from "../components/admin/ManageServices";
 import AddAdmin from "../components/admin/AddAdmin";
 import ManageUsers from "../components/admin/ManageUsers";
+import ManageBookings from "../components/admin/ManageBookings";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -21,6 +22,11 @@ export default function AdminDashboard() {
       id: "dashboard",
       name: "ภาพรวม",
       icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+    },
+    {
+    id: "bookings", 
+    name: "จัดการการจอง",
+    icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002 2M9 5a2 2 0 012-2h2a2 2 0 012 2",
     },
     {
       id: "users",
@@ -133,6 +139,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === "dashboard" && <DashboardStats />}
+        {activeTab === "bookings" && <ManageBookings />}
         {activeTab === "users" && <ManageUsers />}
         {activeTab === "technicians" && <ManageTechnicians />}
         {activeTab === "services" && <ManageServices />}
