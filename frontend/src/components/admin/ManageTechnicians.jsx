@@ -169,7 +169,7 @@ export default function ManageTechnicians() {
                             {technician.service?.map((serviceItem, index) => (
                           <span 
                                 key={index} 
-                                className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded mr-2 mb-1 inline-block" // เพิ่ม mr-2, mb-1, inline-block เพื่อจัดรูปแบบ tag
+                                className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded mr-2 mb-1 inline-block" 
                           >
                             {serviceItem.name}
                           </span>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import api from "../../services/api"
-// อาจเพิ่ม Icon ที่ใช้ใน renderUserList เช่น User, Loader (ถ้ามี)
+import { Star } from "lucide-react";
 
 export default function ManageUsers() {
   const [activeUserTab, setActiveUserTab] = useState("customers")
@@ -8,8 +8,7 @@ export default function ManageUsers() {
   const [technicians, setTechnicians] = useState([])
   const [admins, setAdmins] = useState([])
   
-  // State สำหรับการโหลด: 
-  // loading: ใช้สำหรับโหลดครั้งแรก (ดึงข้อมูลทั้ง 3 ประเภท)
+  // loading: ใช้สำหรับการโหลดข้อมูลครั้งแรก
   const [loading, setLoading] = useState(true) 
   // tabLoading: ใช้เมื่อมีการสลับ Tab หลังจากโหลดครั้งแรก
   const [tabLoading, setTabLoading] = useState(false) 
@@ -19,7 +18,7 @@ export default function ManageUsers() {
   const [editFormData, setEditFormData] = useState({})
   const [saving, setSaving] = useState(false)
 
-  // --- 1. ฟังก์ชันดึงข้อมูลย่อย (ใช้ useCallback เพื่อป้องกันการสร้างฟังก์ชันใหม่ซ้ำๆ) ---
+
   const fetchCustomers = useCallback(async () => {
     try {
       const response = await api.get("/admin/customers")
@@ -305,7 +304,7 @@ export default function ManageUsers() {
 
       {/* Edit Modal */}
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-lg max-w-2xl w-full my-8">
             <div className="p-6 border-b">
               <h3 className="text-xl font-semibold text-gray-900">แก้ไขข้อมูลผู้ใช้</h3>
@@ -378,11 +377,49 @@ export default function ManageUsers() {
                 <div className="mb-6 pt-6 border-t">
                   <h4 className="text-sm font-semibold text-gray-900 mb-4">ข้อมูลช่าง</h4>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">พื้นที่ให้บริการ</label>
-                      {/* Note: ส่วนนี้ควรเป็น input/select หากต้องการแก้ไข, แต่โค้ดเดิมเป็นแค่ text */}
-                      <div className="text-sm text-gray-600">{editFormData.serviceArea?.join(", ") || "-"}</div>
-                    </div>
+                    <div className="grid grid-cols-2 gap-4 pb-4 border-b border-gray-100">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">คะแนนเฉลี่ย</label>
+                                <tar />
+                                <p className="text-xl font-bold text-yellow-600 flex items-center">
+                                    <Star /> {selectedUser.technician.rating?.toFixed(2) || '0.00'}
+                                </p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">จำนวนรีวิว</label>
+                                <p className="text-xl font-bold text-gray-900">
+                                    {selectedUser.technician.totalReviews?.toLocaleString() || 0}
+                                </p>
+                            </div>
+                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">                           
+                            {selectedUser.technician.services && selectedUser.technician.services.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">งานบริการที่เชี่ยวชาญ</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedUser.technician.services.map((service, index) => (
+                                            <span 
+                                                key={index} 
+                                                className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-full"
+                                            >
+                                                {service.name || 'N/A'}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">พื้นที่ให้บริการ</label>
+                                {/* Note: โค้ดเดิมที่ดึง serviceArea */}
+                                <div className="flex flex-wrap gap-2">
+                                    {editFormData.serviceArea?.map((area, index) => (
+                                        <span key={index} className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded-full">
+                                            {area}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">ข้อมูลเพิ่มเติม</label>
                       <textarea
@@ -409,6 +446,18 @@ export default function ManageUsers() {
                             ? "รออนุมัติ"
                             : "ปฏิเสธ"}
                       </span>
+                    </div>
+                    <div>
+                      {(selectedUser.technician.status === "rejected" && 
+                      (selectedUser.technician.rejectReason || selectedUser.technician.reason)) && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <p className="text-sm font-medium text-red-800 mb-1">เหตุผลในการปฏิเสธ:</p>
+                            <p className="text-sm text-red-700">
+                                {/* ใช้ rejectReason หรือ reason (fallback) */}
+                                {selectedUser.technician.rejectReason || selectedUser.technician.reason}
+                            </p>
+                        </div>
+                    )}
                     </div>
                   </div>
                 </div>

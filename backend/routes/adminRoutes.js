@@ -15,6 +15,7 @@ import {
     getUserDetail,
     updateUser,
     updateTechnicianInfo,
+    getAllBookings
 } from "../controllers/adminController.js";
 
 const router = express.Router();
@@ -63,5 +64,10 @@ router.post("/services", auth, isAdmin, addService);
 router.get("/services", auth, isAdmin, getServices);
 router.put("/services/:id", auth, isAdmin, updateService);
 router.delete("/services/:id", auth, isAdmin, deleteService);
+
+/* =======================
+        BOOKING MANAGEMENT
+    ======================= */
+router.get("/bookings", auth, isAdmin, getAllBookings);
 
 export default router;

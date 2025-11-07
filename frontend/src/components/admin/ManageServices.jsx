@@ -343,7 +343,7 @@ export default function ManageServices() {
 
       {/* Edit Service Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md p- z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-lg max-w-2xl w-full p-6 my-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">แก้ไขบริการ</h3>
             <form onSubmit={handleEditService}>

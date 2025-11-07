@@ -101,7 +101,7 @@ const AddressSection = ({ formData, setFormData }) => {
         {/* District Dropdown */}
         <div>
           <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-2">
-            เขต
+            เขต <span className="text-red-500">*</span>
           </label>
           <select
             id="district"

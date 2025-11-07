@@ -13,20 +13,39 @@ const Step1BasicInfo = ({ formData, setFormData, message, setMessage }) => {
         <p className="text-sm text-gray-600">กรอกข้อมูลส่วนตัวของคุณ</p>
       </div>
 
-      <div>
-        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-          ชื่อ-นามสกุล <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="fullName"
-          name="fullName"
-          type="text"
-          placeholder="กรอกชื่อ-นามสกุล"
-          value={formData.fullName}
-          onChange={handleChange}
-          required
-          className="text-black block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* First Name */}
+        <div>
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+            ชื่อ (First Name) <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="firstName"
+            name="firstName"
+            type="text"
+            placeholder="กรอกชื่อ"
+            value={formData.firstName}
+            onChange={handleChange}
+            required
+            className="text-black block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
+        {/* Last Name */}
+        <div>
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+            นามสกุล (Last Name) <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="lastName"
+            name="lastName"
+            type="text"
+            placeholder="กรอกนามสกุล"
+            value={formData.lastName}
+            onChange={handleChange}
+            required
+            className="text-black block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
       </div>
 
       <div>
