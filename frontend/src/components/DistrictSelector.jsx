@@ -1,7 +1,6 @@
-import { useState } from "react"
+// DistrictSelector.jsx
+// *** ไม่มี import useState หรือ useEffect ***
 
-// 1. ข้อมูลเขตและรหัสไปรษณีย์ (จากที่คุณให้มา)
-// (วางไว้นอก Component เพื่อไม่ให้ถูกสร้างใหม่ทุกครั้งที่ re-render)
 const districtsData = [
   { name: "พระนคร", postalCode: "10200" },
   { name: "ดุสิต", postalCode: "10300" },
@@ -55,62 +54,48 @@ const districtsData = [
   { name: "บางบอน", postalCode: "10150" },
 ]
 
-export default function DistrictSelector({ initialDistrict = "", onDataChange }) {
-  // 2. State สำหรับเก็บเขตและรหัสไปรษณีย์ที่ถูกเลือก
-  const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict)
-  const [postalCode, setPostalCode] = useState(
-    districtsData.find((d) => d.name === initialDistrict)?.postalCode || ""
-  )
-
-  // 3. ฟังก์ชันที่ทำงานเมื่อมีการเปลี่ยน Dropdown
+// 1. รับ 'value' (เขตปัจจุบัน) และ 'onChange' (ฟังก์ชันจากแม่)
+export default function DistrictSelector({ value, onChange }) {
+  
   const handleDistrictChange = (e) => {
-    const districtName = e.target.value
-    setSelectedDistrict(districtName)
+    const districtName = (e.target.value || "").trim()
+    const district = districtsData.find((d) => d.name === districtName)
 
-    if (districtName) {
-      // ค้นหาเขตที่ตรงกัน
-      const district = districtsData.find((d) => d.name === districtName)
-      if (district) {
-        // อัปเดต state รหัสไปรษณีย์
-        setPostalCode(district.postalCode)
-        // ส่งข้อมูลกลับไปให้ Component แม่ (ถ้ามี)
-        onDataChange({ district: districtName, postalCode: district.postalCode })
-      }
+    if (district) {
+      // 2. ส่งข้อมูล "ทั้งคู่" (เขต+รหัส) กลับไปให้แม่
+      onChange({ district: districtName, postalCode: district.postalCode })
     } else {
-      // ถ้าเลือก "กรุณาเลือกเขต" ให้เคลียร์ค่า
-      setPostalCode("")
-      onDataChange({ district: "", postalCode: "" })
+      onChange({ district: "", postalCode: "" })
     }
   }
 
-  // 4. JSX ที่จะ render
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* Dropdown สำหรับเลือกเขต */}
-      <div>
-        <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-2">
-          เขต/อำเภอ *
-        </label>
-        <select
-          id="district"
-          value={selectedDistrict}
-          onChange={handleDistrictChange}
-          required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          {/* จะแสดง "กรุณาเลือกเขต" ต่อเมื่อไม่มีเขตเริ่มต้นเท่านั้น */}
-          {initialDistrict === "" && (
-            <option value=""> กรุณาเลือกเขต </option>
-          )}
-          {/* ^^^ สิ้นสุดส่วนที่แก้ไข ^^^ */}
+  // 3. เราจะ .trim() ค่า value ที่รับมาจากแม่
+  // (โค้ดนี้ไม่จำเป็นแล้ว เพราะเราจะ trim ที่แม่แทน แต่เก็บไว้ก็ไม่เสียหาย)
+  const cleanValue = (value || "").trim()
 
-          {districtsData.map((district) => (
-            <option key={district.name} value={district.name}>
-              {district.name}
-            </option>
-          ))}
-        </select>
-      </div>
+  return (
+    <div>
+      <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-2">
+        เขต/อำเภอ *
+      </label>
+      <select
+        id="district"
+        value={cleanValue} // 4. ใช้ค่าที่สะอาดแล้ว
+        onChange={handleDistrictChange}
+        required
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      >
+        {/* 5. แสดง "เลือกเขต" ต่อเมื่อค่าเป็นว่าง */}
+        {cleanValue === "" && (
+          <option value=""> กรุณาเลือกเขต </option>
+        )}
+        
+        {districtsData.map((district) => (
+          <option key={district.name} value={district.name}>
+            {district.name}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

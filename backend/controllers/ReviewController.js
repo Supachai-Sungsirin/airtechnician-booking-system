@@ -41,6 +41,7 @@ export const createReview = async (req, res) => {
     technician.totalReviews += 1;
     technician.rating = totalRating / technician.totalReviews;
     await technician.save();
+    await Booking.findByIdAndUpdate(bookingId, { hasReview: true });
 
     res.status(201).json({ message: "รีวิวสำเร็จ", review: newReview });
   } catch (error) {

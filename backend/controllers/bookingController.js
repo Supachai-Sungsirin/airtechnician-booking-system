@@ -14,11 +14,20 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ message: "กรุณาเพิ่มเขตที่อยู่ก่อนจอง" });
     }
 
-    // หา technician ที่ approved และให้บริการในเขตลูกค้า
-    const technician = await Technician.findOne({
-      status: "approved",
-      serviceArea: { $in: [customer.district] },
-    }).populate("userId");
+  // 1. "ตัด" คำว่า "เขต" และ "ช่องว่าง" ออกจาก customer.district
+    //    เช่น " เขตบางบอน " จะกลายเป็น "บางบอน"
+    const cleanDistrict = (customer.district || "").replace("เขต", "").trim()
+
+    // 2. สร้าง Regular Expression (Regex)
+    //    - 'i' = case-insensitive (ไม่สนตัวพิมพ์เล็ก/ใหญ่)
+    const districtRegex = new RegExp(cleanDistrict, 'i') 
+
+    // 3. ค้นหาช่างด้วย Regex (และเพิ่ม active: true)
+    const technician = await Technician.findOne({
+      status: "approved",
+      active: true, // เพิ่มเงื่อนไขนี้ให้ตรงกับ searchController
+      serviceArea: { $regex: districtRegex }, // <-- 4. เปลี่ยนมาใช้ $regex
+    }).populate("userId");
 
     if (!technician) {
       return res.status(404).json({ message: `ยังไม่มีช่างให้บริการในเขต ${customer.district}` });

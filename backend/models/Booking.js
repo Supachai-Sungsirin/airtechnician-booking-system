@@ -28,6 +28,10 @@ const bookingSchema = new mongoose.Schema({
     enum: ["pending", "assigned", "accepted", "on_the_way", "working", "completed", "cancelled"],
     default: "pending",
   },
+  hasReview: {
+    type: Boolean,
+    default: false
+  },
   totalPrice: { type: Number }, // รวมทุก service
   createdAt: { type: Date, default: Date.now },
 

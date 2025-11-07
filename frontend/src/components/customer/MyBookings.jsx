@@ -91,9 +91,13 @@ export default function MyBookings({
                     <p className="font-medium">บริการ:</p>
                     {booking.services?.map((service, idx) => (
                       <p key={idx} className="ml-2">
-                        • {service.serviceId?.name || "บริการ"} ({service.btuRange}) x{service.quantity} - ฿
-                        {service.price}
-                      </p>
+                        • {service.serviceId?.name || "บริการ"}
+                            {/* vvv นี่คือส่วนที่แก้ไข vvv */}
+                        {service.btuRange && ` (${service.btuRange})`}{" "}
+                            {/* ^^^ สิ้นสุดส่วนที่แก้ไข ^^^ */}
+                            x{service.quantity} - ฿
+                        {service.price}
+                      </p>
                     ))}
                     <p className="font-semibold mt-1">รวม: ฿{booking.totalPrice}</p>
                   </div>
