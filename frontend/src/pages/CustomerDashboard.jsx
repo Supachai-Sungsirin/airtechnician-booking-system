@@ -184,12 +184,26 @@ export default function CustomerDashboard() {
         <ReviewModal
           booking={selectedBooking}
           onClose={() => setShowReviewModal(false)}
-          onSuccess={() => {
-            setShowReviewModal(false);
-            fetchMyBookings();
-          }}
-        />
-      )}
+onSuccess={() => {
+            // 1. อัปเดต State 'bookings' ทันที
+            // โดยหา booking ที่เพิ่งรีวิว (selectedBooking._id)
+            // และเปลี่ยนค่า hasReview เป็น true
+            setBookings(currentBookings =>
+              currentBookings.map(b =>
+                b._id === selectedBooking._id ? { ...b, hasReview: true } : b
+              )
+            );
+
+            // 2. ปิด Modal
+            setShowReviewModal(false);
+
+            // 3. (Optional) ยังคงเรียก fetchMyBookings() ไว้เบาๆ
+            // เพื่อให้ข้อมูลตรงกับ DB เสมอ แต่ UI จะเปลี่ยนไปก่อนแล้ว
+            fetchMyBookings();
+          }}
+          // --- ^^^ สิ้นสุดส่วนที่แก้ไข ^^^
+        />
+      )}
     </div>
   );
 }

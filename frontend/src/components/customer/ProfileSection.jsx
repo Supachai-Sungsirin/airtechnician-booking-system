@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react"
 import api from "../../services/api"
-import DistrictSelector from "../DistrictSelector"
+import DistrictSelector from "../DistrictSelector" // 1. ตรวจสอบว่า import ถูกต้อง
+
+// 2. สร้างฟังก์ชันสำหรับ "ตัด" คำว่า "เขต" และช่องว่าง
+const cleanDistrictName = (district) => {
+  if (!district) return ""
+  return district.replace("เขต", "").trim()
+}
 
 export default function ProfileSection() {
   const [profile, setProfile] = useState(null)
@@ -24,16 +30,15 @@ export default function ProfileSection() {
         const response = await api.get("/auth/me")
         const userData = response.data
 
-        // 1. แก้ไข: ใช้ setProfile (จาก state ที่คุณสร้าง)
         setProfile(userData)
 
-        // 2. เพิ่ม: เติมข้อมูลลง formData เพื่อให้ฟอร์มพร้อมใช้งาน
+        // 3. "ตัด" คำว่า "เขต" ออกจาก userData ก่อนเก็บลง formData
         setFormData({
           fullName: userData.fullName || "",
           phone: userData.phone || "",
           email: userData.email || "",
           address: userData.address || "",
-          district: userData.district || "",
+          district: cleanDistrictName(userData.district), // <-- ใช้ฟังก์ชัน cleanDistrictName
           province: userData.province || "",
           postalCode: userData.postalCode || "",
         })
@@ -41,7 +46,6 @@ export default function ProfileSection() {
         console.error("Failed to fetch user profile:", error)
         setError("ไม่สามารถโหลดข้อมูลโปรไฟล์ได้")
       } finally {
-        // 3. เพิ่ม: หยุด loading หลังจาก API ทำงานเสร็จ
         setLoading(false)
       }
     }
@@ -50,21 +54,33 @@ export default function ProfileSection() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
     try {
       setSaving(true)
       setError(null)
 
-      // 4. แก้ไข: เปลี่ยน updateProfile เป็น api.put (หรือ .patch)
-      // (สมมติว่า endpoint ของคุณคือ PUT /auth/me)
-      const response = await api.put("/auth/me", formData)
+      // 4. "เติม" คำว่า "เขต" กลับเข้าไป ก่อนส่งไปบันทึก
+      const districtToSave = formData.district.startsWith("เขต") 
+        ? formData.district 
+        : `เขต${formData.district}`
+
+      const dataToSave = {
+        ...formData,
+        district: districtToSave.trim(),
+      }
+
+      const response = await api.put("/auth/me", dataToSave)
       const updatedProfile = response.data
 
       setProfile(updatedProfile)
       
-      // อัปเดต localStorage ด้วย (เผื่อส่วนอื่นของเว็บต้องใช้)
+      // 5. อัปเดต formData อีกครั้งด้วยข้อมูลที่ "ตัด" แล้ว
+      setFormData((prev) => ({
+        ...prev,
+        // อัปเดต State ของ form ให้ตรงกับที่เพิ่งบันทึก (แบบ "ตัด" แล้ว)
+        district: cleanDistrictName(updatedProfile.district) 
+      }))
+      
       localStorage.setItem("user", JSON.stringify(updatedProfile))
-
       setIsEditing(false)
       alert("บันทึกข้อมูลโปรไฟล์สำเร็จ")
     } catch (err) {
@@ -74,7 +90,8 @@ export default function ProfileSection() {
       setSaving(false)
     }
   }
-  // 2. สร้างฟังก์ชันสำหรับรับข้อมูลจาก DistrictSelector
+  
+  // 6. เปลี่ยนชื่อฟังก์ชัน (ชื่อเดิมก็ได้ แต่ต้องตรงกับ prop ที่ส่ง)
   const handleAddressChange = ({ district, postalCode }) => {
     setFormData((prevData) => ({
       ...prevData,
@@ -84,13 +101,12 @@ export default function ProfileSection() {
   }
 
   const handleCancel = () => {
-    // โค้ดส่วนนี้ถูกต้องแล้ว (ดึงข้อมูลจาก profile มาใส่ form)
     setFormData({
       fullName: profile.fullName || "",
       phone: profile.phone || "",
       email: profile.email || "",
       address: profile.address || "",
-      district: profile.district || "",
+      district: cleanDistrictName(profile.district), // 8. "ตัด" เขต ตอนกดยกเลิก
       province: profile.province || "",
       postalCode: profile.postalCode || "",
     })
@@ -149,21 +165,21 @@ export default function ProfileSection() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">เบอร์โทรศัพท์ *</label>
-              <input
-                type="tel" // ใช้ type="tel" ดีอยู่แล้ว
-                required
-                value={formData.phone}
-                onChange={(e) => {
-                  // กรองให้รับเฉพาะตัวเลข
-                  const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                  // ตัดให้เหลือ 10 ตัวอักษร
-                  setFormData({ ...formData, phone: numericValue.slice(0, 10) })
-                }}
-                maxLength={10} // 1. จำกัดความยาวสูงสุด 10 ตัว
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">เบอร์โทรศัพท์ *</label>
+              <input
+                type="tel" // ใช้ type="tel" ดีอยู่แล้ว
+                required
+                value={formData.phone}
+                onChange={(e) => {
+                  // กรองให้รับเฉพาะตัวเลข
+                  const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                  // ตัดให้เหลือ 10 ตัวอักษร
+                  setFormData({ ...formData, phone: numericValue.slice(0, 10) })
+                }}
+                maxLength={10} // 1. จำกัดความยาวสูงสุด 10 ตัว
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
@@ -187,13 +203,14 @@ export default function ProfileSection() {
               />
             </div>
 
-            {/* 3. นำ Component มาวางแทนที่ Input เขตและรหัสไปรษณีย์เดิม */}
+            {/* vvv นี่คือส่วนที่แก้ไข vvv */}
             <DistrictSelector
-        // ส่งค่า district ที่มีอยู่ (จาก profile) เป็นค่าเริ่มต้น
-            initialDistrict={profile?.district || ""} 
-        // ส่งฟังก์ชันนี้ลงไปเพื่อให้ลูกอัปเดต formData
-            onDataChange={handleAddressChange} 
-        />
+              // 9. ส่ง value จาก formData (ซึ่ง "ตัด" เขตแล้ว)
+              value={formData.district} 
+              // 10. เปลี่ยน onDataChange เป็น onChange ให้ตรงกับที่ลูกเรียก
+              onChange={handleAddressChange} 
+            />
+            {/* ^^^ สิ้นสุดส่วนที่แก้ไข ^^^ */}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">จังหวัด</label>
@@ -211,14 +228,15 @@ export default function ProfileSection() {
               <input
                 type="text"
                 value={formData.postalCode}
-                onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                placeholder="รหัสไปรษณีย์"
+                readOnly 
+                placeholder="จะแสดงอัตโนมัติ"
                 maxLength={5}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
               />
             </div>
           </div>
 
+          {/* (ส่วนปุ่ม... ถูกต้องแล้ว) */}
           <div className="flex gap-3 pt-4 border-t">
             <button
               type="button"
@@ -237,29 +255,24 @@ export default function ProfileSection() {
           </div>
         </form>
       ) : (
+        // (ส่วนแสดงผล... ถูกต้องแล้ว)
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-500 mb-1">ชื่อ-นามสกุล</label>
               <p className="text-gray-900">{profile?.fullName || "-"}</p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">เบอร์โทรศัพท์</label>
-              <p className="text-gray-900">{profile?.phone || "-"}</p>
-            </div>
-
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-500 mb-1">อีเมล</label>
               <p className="text-gray-900">{profile?.email || "-"}</p>
             </div>
-
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">เบอร์โทรศัพท์</label>
+              <p className="text-gray-900">{profile?.phone || "-"}</p>
+            </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-500 mb-1">ที่อยู่</label>
               <p className="text-gray-900">
-                {/* โค้ดส่วนนี้ถูกต้องแล้ว ไม่ต้องแก้ไข 
-                  ใช้ profile?.address แทน formData?.address
-                */}
                 {profile?.address || "-"}
                 {profile?.district && `, ${profile.district}`}
                 {profile?.province && `, ${profile.province}`}
