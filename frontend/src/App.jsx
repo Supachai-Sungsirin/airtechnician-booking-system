@@ -6,12 +6,13 @@ import RegisterTechnician from "./pages/RegisterTechnician"
 import CustomerDashboard from "./pages/CustomerDashboard"
 import Navbar from "./components/Navbar"
 import AdminDashboard from "./pages/AdminDashboard"
+import TechnicianDashboard from "./pages/TechnicianDashboard"
 
 function AppContent() {
   const location = useLocation()
   
   // กำหนดเส้นทางที่ไม่ต้องการให้แสดง Navbar ของหน้าหลัก
-  const noNavbarPaths = ["/AdminDashboard", "/CustomerDashboard", "/dashboard"]
+  const noNavbarPaths = ["/AdminDashboard", "/CustomerDashboard", "/dashboard", "/technician/dashboard"]
   
   // ตรวจสอบว่าเส้นทางปัจจุบันอยู่ในรายการที่ซ่อน Navbar หรือไม่
   const shouldShowNavbar = !noNavbarPaths.includes(location.pathname)
@@ -26,6 +27,7 @@ function AppContent() {
         <Route path="/technician-register" element={<RegisterTechnician />} />
         <Route path="/CustomerDashboard" element={<CustomerDashboard />} />
         <Route path="/AdminDashboard" element={<AdminDashboard />} />
+        <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
       </Routes>
     </>
   )

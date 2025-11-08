@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
 const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
@@ -8,29 +8,41 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ["customer", "technician", "admin"],
-    default: "customer"
+    enum: ['customer', 'technician', 'admin'],
+    default: 'customer',
   },
 
-  // เฉพาะลูกค้า/ช่างเท่านั้นที่ต้องมี
+  profileImageUrl: {
+    type: String,
+    default: '', // (คุณสามารถใส่ URL รูป Default ของระบบไว้ที่นี่)
+  }, // เฉพาะลูกค้า/ช่างเท่านั้นที่ต้องมี
+
   address: {
     type: String,
-    required: function () { return this.role !== "admin"; }
+    required: function () {
+      return this.role !== 'admin'
+    },
   },
   district: {
     type: String,
-    required: function () { return this.role !== "admin"; }
+    required: function () {
+      return this.role !== 'admin'
+    },
   },
   province: {
     type: String,
-    required: function () { return this.role !== "admin"; }
+    required: function () {
+      return this.role !== 'admin'
+    },
   },
   postalCode: {
     type: String,
-    required: function () { return this.role !== "admin"; }
+    required: function () {
+      return this.role !== 'admin'
+    },
   },
 
-  createdAt: { type: Date, default: Date.now }
-});
+  createdAt: { type: Date, default: Date.now },
+})
 
-export default mongoose.model("User", userSchema);
+export default mongoose.model('User', userSchema)
