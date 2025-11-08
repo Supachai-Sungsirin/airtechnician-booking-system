@@ -1,6 +1,7 @@
 import express from "express";
-import { registerCustomer, registerTechnician, login, getMe, getAvailableServices, updateMyProfile } from "../controllers/authController.js"; 
+import { registerCustomer, registerTechnician, login, getMe, getAvailableServices, updateMyProfile, uploadProfilePicture } from "../controllers/authController.js"; 
 import { auth } from "../middleware/authMiddleware.js"; 
+import { upload } from "../controllers/uploadController.js";
 
 const router = express.Router();
 
@@ -21,5 +22,15 @@ router.get("/me", auth, getMe);
 
 // PUT /auth/me
 router.put('/me', auth, updateMyProfile)
+
+
+// PUT /auth/profile-picture
+router.put(
+    "/profile-picture", 
+    auth,                     // 1. ต้องล็อกอิน
+    upload.single("file"),    // 2. ใช้ Multer รับไฟล์ชื่อ "file"
+    uploadProfilePicture      // 3. เรียก Controller
+);
+
 
 export default router;

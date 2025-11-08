@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Technician from "../models/Technician.js";
 import Services from "../models/Service.js";
+import cloudinary from "../config/cloudinary.js";
 
 // สมัครสมาชิก Customer
 export const registerCustomer = async (req, res) => {
@@ -263,3 +264,45 @@ export const updateMyProfile = async (req, res) => {
     res.status(500).json({ message: 'Error updating profile' })
   }
 }
+
+// (ใหม่) อัปโหลดรูปโปรไฟล์
+export const uploadProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "กรุณาเลือกไฟล์" });
+    }
+
+    // 1. แปลง buffer → base64 string (เหมือนใน uploadController)
+    const fileBase64 = Buffer.from(req.file.buffer).toString("base64");
+    const fileDataUri = `data:${req.file.mimetype};base64,${fileBase64}`;
+
+    // 2. อัปโหลด (ใช้โฟลเดอร์ใหม่, ตั้งชื่อไฟล์=userId, และย่อขนาด)
+    const result = await cloudinary.uploader.upload(fileDataUri, {
+      folder: "profile_pictures",
+      public_id: req.user.id, // (req.user.id มาจาก 'auth' middleware)
+      overwrite: true,
+      transformation: [
+        { width: 400, height: 400, crop: "fill", gravity: "face" }
+      ]
+    });
+
+    // 3. (สำคัญ) บันทึก URL ใหม่ลงใน User Model
+    // (เราต้องมั่นใจว่า userModel.js มี field 'profileImageUrl' แล้ว)
+    const user = await User.findById(req.user.id);
+    if (!user) {
+        return res.status(404).json({ message: "ไม่พบผู้ใช้" });
+    }
+
+    user.profileImageUrl = result.secure_url; // อัปเดตช่องเก็บรูป
+    await user.save();
+
+    res.json({
+      message: "อัปโหลดรูปโปรไฟล์สำเร็จ",
+      profileImageUrl: result.secure_url,
+    });
+
+  } catch (error) {
+    console.error("Upload profile picture error:", error);
+    res.status(500).json({ message: "อัปโหลดล้มเหลว", error });
+  }
+};

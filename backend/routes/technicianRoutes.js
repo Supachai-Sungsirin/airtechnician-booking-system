@@ -1,32 +1,52 @@
-import express from "express";
-import { auth, roleAuth } from "../middleware/authMiddleware.js";
-import { getAssignedBookings, acceptBooking, updateTechnicianProfile, getMyReviews, completeBooking } from "../controllers/technicianController.js";
+import express from 'express'
+import { auth, roleAuth } from '../middleware/authMiddleware.js'
+import {
+  getAssignedBookings,
+  acceptBooking,
+  updateTechnicianProfile,
+  getMyReviews,
+  completeBooking,
+  rejectBooking,
+  getTechnicianProfile,
+  uploadBookingPhotos,
+} from '../controllers/technicianController.js'
+import { upload } from '../controllers/uploadController.js'
 
-const router = express.Router();
+const router = express.Router()
 
 // GET localhost:5000/technicians/bookings
-router.get("/bookings", auth, roleAuth("technician"), getAssignedBookings);
+router.get('/bookings', auth, roleAuth('technician'), getAssignedBookings)
 // PUT localhost:5000/technicians/bookings/.../accept
-router.put("/bookings/:id/accept", auth, roleAuth("technician"), acceptBooking);
+router.put('/bookings/:id/accept', auth, roleAuth('technician'), acceptBooking)
+// POST /technicians/bookings/:id/upload
+router.post(
+  '/bookings/:id/upload',
+  auth,
+  roleAuth('technician'),
+  upload.array('photos', 5), // (ใช้ .array() เพื่อรับหลายไฟล์, max 5 รูป)
+  uploadBookingPhotos
+)
 // PATCH localhost:5000/technicians/bookings/.../complete
 router.patch(
-    "/bookings/:id/complete",
-    auth,
-    roleAuth("technician"),
-    completeBooking
-);
+  '/bookings/:id/complete',
+  auth,
+  roleAuth('technician'),
+  completeBooking
+)
+// PATCH /technicians/bookings/:id/reject
+router.patch(
+  '/bookings/:id/reject',
+  auth,
+  roleAuth('technician'),
+  rejectBooking
+)
 
-// Update technician profile
+// GET localhost:5000/technicians/profile
+router.get('/profile', auth, roleAuth('technician'), getTechnicianProfile)
 // PUT localhost:5000/technicians/profile
-router.put("/profile", auth, roleAuth("technician"), updateTechnicianProfile);
+router.put('/profile', auth, roleAuth('technician'), updateTechnicianProfile)
 
 // GET localhost:5000/technicians/reviews
-router.get(
-    "/reviews",
-    auth,
-    roleAuth("technician"),
-    getMyReviews
-);
+router.get('/reviews', auth, roleAuth('technician'), getMyReviews)
 
-
-export default router;
+export default router
