@@ -20,6 +20,9 @@ export default function BookingModal({ onClose, onSuccess }) {
   const [availableTechnicians, setAvailableTechnicians] = useState([]);
   const [selectedTechnician, setSelectedTechnician] = useState(null);
 
+  const [timeAvailable, setTimeAvailable] = useState(true);
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -143,7 +146,6 @@ export default function BookingModal({ onClose, onSuccess }) {
       if (!service) return false;
 
       const hasBtuOptions = service.options.some((opt) => opt.btuRange);
-
       if (hasBtuOptions && s.btuRange === "") return false;
 
       return true;
@@ -158,6 +160,24 @@ export default function BookingModal({ onClose, onSuccess }) {
     const now = new Date();
     if (requestedDate <= now) {
       alert("กรุณาเลือกวันและเวลาที่เป็นอนาคต");
+      return;
+    }
+
+    // ✅ ตรวจสอบความพร้อมของเวลาอีกครั้งก่อนไปขั้นตอนถัดไป
+    try {
+      const res = await api.get("/booking/check-availability", {
+        params: { dateTime: formData.requestedDateTime },
+      });
+      setTimeAvailable(res.data.available);
+      setAvailabilityMessage(res.data.message);
+
+      if (!res.data.available) {
+        alert("เวลาที่คุณเลือกไม่สามารถจองได้ กรุณาเลือกเวลาอื่น");
+        return; // หยุดการ submit
+      }
+    } catch (err) {
+      console.error("Error checking availability:", err);
+      alert("ไม่สามารถตรวจสอบเวลาที่เลือกได้ กรุณาลองใหม่");
       return;
     }
 
@@ -180,26 +200,12 @@ export default function BookingModal({ onClose, onSuccess }) {
         });
 
       const serviceIdsToFindTechnicians = validServices.map((s) => s.serviceId);
-
-      console.log("[v0] Searching technicians for:", {
-        district: formData.district,
-        serviceIds: serviceIdsToFindTechnicians,
-      });
-
-      // 1. แปลง Array [id1, id2] ให้เป็น String "id1,id2"
       const serviceIdString = serviceIdsToFindTechnicians.join(",");
 
-      // 2. ยิง API ด้วย .get และส่งข้อมูลผ่าน params
       const searchResult = await api.get("/search/technicians", {
-        params: {
-          district: formData.district,
-          serviceIds: serviceIdString, // ส่งเป็น String ที่คั่นด้วย ,
-        },
+        params: { district: formData.district, serviceIds: serviceIdString },
       });
 
-      console.log("[v0] Search result:", searchResult);
-
-      // แปลงข้อมูลช่างให้ตรงกับ format ที่ UI ต้องการ
       const foundTechnicians = searchResult.data.data.map((tech) => ({
         _id: tech._id,
         name: tech.userId?.fullName || "ไม่ระบุชื่อ",
@@ -289,7 +295,7 @@ export default function BookingModal({ onClose, onSuccess }) {
   const getMinDateTime = () => {
     const now = new Date();
     now.setHours(now.getHours() + 1);
-    now.setMinutes(now.getMinutes() - (now.getMinutes() % 5));
+    now.setMinutes(now.getMinutes()); // ไม่ต้องปัดลง
     return now.toISOString().slice(0, 16);
   };
 
@@ -319,7 +325,7 @@ export default function BookingModal({ onClose, onSuccess }) {
 
   // 3. ส่วนที่เหลือคือ UI ของ "ขั้นตอนที่ 1" (หน้ากรอกข้อมูล)
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
@@ -335,19 +341,6 @@ export default function BookingModal({ onClose, onSuccess }) {
             >
               ×
             </button>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex gap-3">
-              <span className="text-blue-600 text-xl">ℹ️</span>
-              <div className="text-sm text-blue-800">
-                <p className="font-medium">ระบบแมทช์ช่างอัตโนมัติ</p>
-                <p className="mt-1">
-                  เมื่อคุณจองบริการ
-                  ระบบจะหาช่างที่ให้บริการในเขตของคุณโดยอัตโนมัติ
-                </p>
-              </div>
-            </div>
           </div>
 
           {fetchError && (
@@ -552,19 +545,44 @@ export default function BookingModal({ onClose, onSuccess }) {
                         ? formData.requestedDateTime.slice(11, 16)
                         : ""
                     }
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const date = formData.requestedDateTime
                         ? formData.requestedDateTime.slice(0, 10)
                         : new Date().toISOString().slice(0, 10);
+                      const newDateTime = `${date}T${e.target.value}`;
                       setFormData({
                         ...formData,
-                        requestedDateTime: `${date}T${e.target.value}`,
+                        requestedDateTime: newDateTime,
                       });
+
+                      try {
+                        const res = await api.get(
+                          "/booking/check-availability",
+                          {
+                            params: { dateTime: newDateTime },
+                          }
+                        );
+                        setTimeAvailable(res.data.available);
+                        setAvailabilityMessage(res.data.message);
+                      } catch (err) {
+                        console.error("Error checking availability:", err);
+                        setTimeAvailable(false);
+                        setAvailabilityMessage("ไม่สามารถตรวจสอบเวลาได้");
+                      }
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
+              {availabilityMessage && (
+                <p
+                  className={`text-sm mt-2 ${
+                    timeAvailable ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {availabilityMessage}
+                </p>
+              )}
 
               <p className="text-xs text-gray-500 mt-1">
                 * กรุณาจองล่วงหน้าอย่างน้อย 1 ชั่วโมง
@@ -581,7 +599,7 @@ export default function BookingModal({ onClose, onSuccess }) {
                     {formData.address}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    (หากต้องการแก้ไขที่อยู่ กรุณาไปที่หน้าข้อมูลโปรไฟล์)
+                    (หากต้องการแก้ไขที่อยู่ กรุณาไปที่หน้าโปรไฟล์)
                   </p>
                 </div>
               </>
@@ -649,8 +667,12 @@ export default function BookingModal({ onClose, onSuccess }) {
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || !timeAvailable}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors ${
+                  timeAvailable
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                }`}
               >
                 {loading ? "กำลังค้นหาช่าง..." : "ถัดไป →"}
               </button>

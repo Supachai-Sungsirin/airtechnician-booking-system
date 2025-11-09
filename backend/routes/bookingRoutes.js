@@ -8,12 +8,15 @@ import {
   getBookingById,
   updateBookingStatus,
   assignTechnician,
+  checkAvailability
 } from "../controllers/bookingController.js";
 
 const router = express.Router();
 
 // ลูกค้าสร้าง Booking
 router.post("/", auth, createBooking);
+// ตรวจสอบช่างที่ว่าง
+router.get("/check-availability", checkAvailability);
 // ดึง Booking ของลูกค้าและช่าง
 router.get("/customer", auth, getCustomerBookings);
 router.get("/technician", auth, getTechnicianBookings);
