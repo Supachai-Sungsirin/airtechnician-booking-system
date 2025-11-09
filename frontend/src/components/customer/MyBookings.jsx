@@ -3,8 +3,6 @@ import api from "../../services/api"
 export default function MyBookings({
   bookings,
   bookingsLoading,
-  setSelectedBooking,
-  setShowReviewModal,
   fetchMyBookings,
 }) {
   const getStatusColor = (status) => {
@@ -44,11 +42,6 @@ export default function MyBookings({
       alert("เกิดข้อผิดพลาดในการยกเลิกการจอง")
       console.error("Error cancelling booking:", error)
     }
-  }
-
-  const handleReview = (booking) => {
-    setSelectedBooking(booking)
-    setShowReviewModal(true)
   }
 
   if (bookingsLoading) {
@@ -92,9 +85,7 @@ export default function MyBookings({
                     {booking.services?.map((service, idx) => (
                       <p key={idx} className="ml-2">
                         • {service.serviceId?.name || "บริการ"}
-                            {/* vvv นี่คือส่วนที่แก้ไข vvv */}
                         {service.btuRange && ` (${service.btuRange})`}{" "}
-                            {/* ^^^ สิ้นสุดส่วนที่แก้ไข ^^^ */}
                             x{service.quantity} - ฿
                         {service.price}
                       </p>
@@ -122,19 +113,6 @@ export default function MyBookings({
                   >
                     ยกเลิก
                   </button>
-                )}
-
-                {booking.status === "completed" && !booking.hasReview && (
-                  <button
-                    onClick={() => handleReview(booking)}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    ให้คะแนน
-                  </button>
-                )}
-
-                {booking.hasReview && (
-                  <span className="px-3 py-1 text-sm text-green-600 bg-green-50 rounded-lg">✓ รีวิวแล้ว</span>
                 )}
               </div>
             </div>
