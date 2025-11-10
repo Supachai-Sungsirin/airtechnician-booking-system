@@ -100,7 +100,7 @@ export const getCustomerBookings = async (req, res) => {
     const bookings = await Booking.find({ customerId: req.user.id })
       .populate({
         path: "technicianId",
-        populate: { path: "userId", select: "fullName phone" },
+        populate: { path: "userId", select: "fullName phone profileImageUrl" },
       })
       .populate({
         path: "services.serviceId",

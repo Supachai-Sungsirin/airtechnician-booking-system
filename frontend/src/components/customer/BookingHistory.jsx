@@ -75,15 +75,27 @@ export default function BookingHistory({
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-start gap-4">
-                      <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0 ${
-                          booking.status === "completed"
-                            ? "bg-gradient-to-br from-green-500 to-green-600"
-                            : "bg-gradient-to-br from-red-500 to-red-600"
-                        }`}
-                      >
-                        {booking.status === "completed" ? "✓" : "✕"}
-                      </div>
+                      {/* --- ⭐️ (เริ่มแก้ไข) --- */}
+                      {booking.technicianId?.userId?.profileImageUrl ? (
+                        // 1. ถ้าช่างมีรูปโปรไฟล์
+                        <img
+                          src={booking.technicianId.userId.profileImageUrl}
+                          alt={booking.technicianId.userId.fullName || "Profile"}
+                          className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-gray-200"
+                        />
+                      ) : (
+                        // 2. ถ้าไม่มีรูป (ใช้ Placeholder ไอคอน ✓/✕ เหมือนเดิม)
+                        <div
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0 ${
+                            booking.status === "completed"
+                              ? "bg-gradient-to-br from-green-500 to-green-600"
+                              : "bg-gradient-to-br from-red-500 to-red-600"
+                          }`}
+                        >
+                          {booking.status === "completed" ? "✓" : "✕"}
+                        </div>
+                      )}
+                      {/* --- ⭐️ (จบแก้ไข) --- */}
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900">
                           {booking.technicianId?.userId?.fullName || "ไม่มีข้อมูลช่าง"}

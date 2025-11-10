@@ -21,6 +21,8 @@ export default function CustomerDashboard() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
@@ -62,11 +64,19 @@ export default function CustomerDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("user");
-    navigate("/login");
+  const handleConfirmLogout = () => { //
+    localStorage.removeItem("token"); //
+    localStorage.removeItem("role"); //
+    localStorage.removeItem("user"); //
+    navigate("/login"); //
+  };
+
+  const openLogoutModal = () => {
+    setShowLogoutModal(true);
+  };
+
+  const closeLogoutModal = () => {
+    setShowLogoutModal(false);
   };
 
   const currentBookings = bookings.filter(
@@ -97,7 +107,7 @@ export default function CustomerDashboard() {
                 </p>
               </div>
               <button
-                onClick={handleLogout}
+                onClick={openLogoutModal}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 ออกจากระบบ
@@ -221,6 +231,35 @@ export default function CustomerDashboard() {
             fetchMyBookings();
           }}
         />
+      )}
+
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              ยืนยันการออกจากระบบ
+            </h3>
+            <p className="text-gray-600 mb-6">
+              คุณต้องการออกจากระบบใช่หรือไม่?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={closeLogoutModal}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                ออกจากระบบ
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
