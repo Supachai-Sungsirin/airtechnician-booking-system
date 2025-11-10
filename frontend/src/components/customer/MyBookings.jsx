@@ -1,3 +1,4 @@
+import { useState } from "react";
 import api from "../../services/api"
 
 export default function MyBookings({
@@ -5,6 +6,9 @@ export default function MyBookings({
   bookingsLoading,
   fetchMyBookings,
 }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const getStatusColor = (status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -31,18 +35,36 @@ export default function MyBookings({
     return texts[status] || status
   }
 
-  const handleCancelBooking = async (bookingId) => {
-    if (!confirm("คุณต้องการยกเลิกการจองนี้ใช่หรือไม่?")) return
+// --- ⭐️ (แก้ไข) 1. ฟังก์ชันนี้สำหรับเปิด Modal ---
+  const openCancelModal = (booking) => {
+    setBookingToCancel(booking);
+    setIsModalOpen(true);
+  };
 
+  // --- ⭐️ (เพิ่ม) 2. ฟังก์ชันนี้สำหรับยิง API (ปุ่ม "ยืนยัน" ใน Modal) ---
+  const handleConfirmCancel = async () => {
+    if (!bookingToCancel) return;
+
+    setIsCancelling(true);
     try {
-      await api.patch(`/booking/${bookingId}/status`, { status: "cancelled" })
-      alert("ยกเลิกการจองเรียบร้อยแล้ว")
-      fetchMyBookings()
+      await api.patch(`/booking/${bookingToCancel._id}/status`, { status: "cancelled" });
+      // alert("ยกเลิกการจองเรียบร้อยแล้ว"); // (ลบ alert ออก)
+      fetchMyBookings();
+      closeModal(); // ปิด Modal เมื่อสำเร็จ
     } catch (error) {
-      alert("เกิดข้อผิดพลาดในการยกเลิกการจอง")
-      console.error("Error cancelling booking:", error)
+      alert("เกิดข้อผิดพลาดในการยกเลิกการจอง"); // (ยังเก็บ alert นี้ไว้สำหรับ Error)
+      console.error("Error cancelling booking:", error);
+    } finally {
+      setIsCancelling(false);
     }
-  }
+  };
+
+  // --- ⭐️ (เพิ่ม) 3. ฟังก์ชันสำหรับปิด Modal ---
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setBookingToCancel(null);
+    setIsCancelling(false); // Reset loading state
+  };
 
   if (bookingsLoading) {
     return (
@@ -73,9 +95,17 @@ export default function MyBookings({
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0">
-                  👨‍🔧
-                </div>
+                  {booking.technicianId?.userId?.profileImageUrl ? (
+                  <img
+                    src={booking.technicianId.userId.profileImageUrl}
+                    alt={booking.technicianId.userId.fullName || "Profile"}
+                    className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0">
+                    👨‍🔧
+                  </div>
+                )}
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">
                     {booking.technicianId?.userId?.fullName || "กำลังจัดหาช่าง"}
@@ -108,7 +138,7 @@ export default function MyBookings({
               <div className="flex gap-2">
                 {booking.status === "pending" && (
                   <button
-                    onClick={() => handleCancelBooking(booking._id)}
+                    onClick={() => openCancelModal(booking)}
                     className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     ยกเลิก
@@ -119,6 +149,37 @@ export default function MyBookings({
           </div>
         </div>
       ))}
+      {/* --- ⭐️ (เพิ่ม) 5. JSX สำหรับ Modal --- */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              ยืนยันการยกเลิก
+            </h3>
+            <p className="text-gray-600 mb-6">
+              คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={isCancelling}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={isCancelling}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {isCancelling ? "กำลังยกเลิก..." : "ยืนยัน"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -14,6 +14,7 @@ export default function ProfileSection() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null)
   const [formData, setFormData] = useState({
     fullName: "",
     phone: "",
@@ -57,6 +58,7 @@ export default function ProfileSection() {
     try {
       setSaving(true)
       setError(null)
+      setSuccessMessage(null)
 
       // 4. "เติม" คำว่า "เขต" กลับเข้าไป ก่อนส่งไปบันทึก
       const districtToSave = formData.district.startsWith("เขต") 
@@ -82,7 +84,10 @@ export default function ProfileSection() {
       
       localStorage.setItem("user", JSON.stringify(updatedProfile))
       setIsEditing(false)
-      alert("บันทึกข้อมูลโปรไฟล์สำเร็จ")
+      setSuccessMessage("บันทึกข้อมูลโปรไฟล์สำเร็จ!")
+      setTimeout(() => {
+        setSuccessMessage(null)
+      }, 3000)
     } catch (err) {
       console.error("Error updating profile:", err)
       setError(err.response?.data?.message || "ไม่สามารถบันทึกข้อมูลได้")
@@ -112,6 +117,14 @@ export default function ProfileSection() {
     })
     setIsEditing(false)
     setError(null)
+    setSuccessMessage(null)
+  }
+
+  //ฟังก์ชันใหม่สำหรับเคลียร์ข้อความก่อนเริ่มแก้ไข
+  const handleStartEditing = () => {
+    setError(null)
+    setSuccessMessage(null)
+    setIsEditing(true)
   }
 
   if (loading) {
@@ -138,13 +151,22 @@ export default function ProfileSection() {
         </div>
         {!isEditing && (
           <button
-            onClick={() => setIsEditing(true)}
+            onClick={handleStartEditing}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             แก้ไขข้อมูล
           </button>
         )}
       </div>
+      
+      {successMessage && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+          ✓ {successMessage}
+        </div>
+      )}
+      {error && ( //
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">⚠️ {error}</div>
+      )}
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">⚠️ {error}</div>

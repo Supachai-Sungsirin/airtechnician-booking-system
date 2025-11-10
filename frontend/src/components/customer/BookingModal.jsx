@@ -23,6 +23,8 @@ export default function BookingModal({ onClose, onSuccess }) {
   const [timeAvailable, setTimeAvailable] = useState(true);
   const [availabilityMessage, setAvailabilityMessage] = useState("");
 
+  const [bookingResult, setBookingResult] = useState(null);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -215,6 +217,7 @@ export default function BookingModal({ onClose, onSuccess }) {
         specializations: tech.services?.map((s) => s.name) || [],
         rating: tech.rating || 0,
         completedJobs: tech.totalReviews || 0,
+        profileImageUrl: tech.userId?.profileImageUrl || null,
       }));
 
       setAvailableTechnicians(foundTechnicians);
@@ -268,16 +271,12 @@ export default function BookingModal({ onClose, onSuccess }) {
 
       const { message, assignedTechnician, totalPrice } = bookingResponse.data;
 
-      alert(
-        `${message}\n\nราคารวม: ฿${totalPrice.toLocaleString()}` +
-          `${
-            assignedTechnician
-              ? `\n\nช่างที่ได้รับมอบหมาย:\n${assignedTechnician.name}\nเบอร์โทร: ${assignedTechnician.phone}`
-              : ""
-          }`
-      );
-
-      onSuccess();
+      setBookingResult({
+        message: message,
+        totalPrice: totalPrice,
+        assignedTechnician: assignedTechnician || null,
+      });
+      setCurrentStep(3);
     } catch (error) {
       console.error("Error creating booking:", error);
       if (error.response?.status === 401) {
@@ -289,6 +288,31 @@ export default function BookingModal({ onClose, onSuccess }) {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkDateTimeAvailability = async (dateTimeString) => {
+    if (!dateTimeString || dateTimeString.includes("T")) {
+      // (ป้องกันการยิง API ถ้าข้อมูลยังไม่ครบ)
+      const parts = dateTimeString.split('T');
+      if (!parts[0] || !parts[1] || parts[1] === "") {
+         setTimeAvailable(false); // ยังเลือกไม่ครบ
+         setAvailabilityMessage("กรุณาเลือกวันและเวลาให้ครบถ้วน");
+         return;
+      }
+    }
+    
+    try {
+      const res = await api.get(
+        "/booking/check-availability",
+        { params: { dateTime: dateTimeString } }
+      );
+      setTimeAvailable(res.data.available);
+      setAvailabilityMessage(res.data.message);
+    } catch (err) {
+      console.error("Error checking availability:", err);
+      setTimeAvailable(false);
+      setAvailabilityMessage("ไม่สามารถตรวจสอบเวลาได้");
     }
   };
 
@@ -306,6 +330,58 @@ export default function BookingModal({ onClose, onSuccess }) {
     userProfile.province &&
     userProfile.postalCode;
 
+    if (currentStep === 3 && bookingResult) {
+    return (
+      <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl max-w-md w-full">
+          <div className="p-8 text-center">
+            {/* ไอคอน */}
+            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+              ✓
+            </div>
+
+            {/* ข้อความหลัก */}
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              {bookingResult.message || "จองสำเร็จ!"}
+            </h2>
+
+            {/* ราคา */}
+            <p className="text-lg text-gray-700 mb-6">
+              <strong>ราคารวม:{" "}</strong>
+              <span className="font-bold text-gray-900">
+                ฿{bookingResult.totalPrice.toLocaleString()}
+              </span>
+            </p>
+
+            {/* ข้อมูลช่าง (ถ้ามี) */}
+            {bookingResult.assignedTechnician && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left text-sm space-y-1">
+                <h3 className="font-semibold text-blue-900 mb-2">
+                  ช่างที่ได้รับมอบหมาย:
+                </h3>
+                <p className="text-blue-800">
+                  <strong>ชื่อ:</strong> {bookingResult.assignedTechnician.name}
+                </p>
+                <p className="text-blue-800">
+                  <strong>เบอร์โทร:</strong>{" "}
+                  {bookingResult.assignedTechnician.phone}
+                </p>
+              </div>
+            )}
+
+            {/* ปุ่มปิด (เรียก onSuccess) */}
+            <button
+              onClick={onSuccess}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              รับทราบ
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   // 2. แก้ไขส่วนนี้ให้เรียกใช้ Component ใหม่
   if (currentStep === 2) {
     return (
@@ -522,14 +598,20 @@ export default function BookingModal({ onClose, onSuccess }) {
                         ? formData.requestedDateTime.slice(0, 10)
                         : ""
                     }
-                    onChange={(e) => {
+                    onChange={async (e) => { // (ทำให้เป็น async)
                       const time = formData.requestedDateTime
                         ? formData.requestedDateTime.slice(11, 16)
-                        : "09:00";
+                        : ""; // (เปลี่ยน "09:00" เป็น "" เพื่อบังคับให้เลือกเวลาใหม่)
+                      
+                      const newDateTime = `${e.target.value}T${time}`;
+                      
                       setFormData({
                         ...formData,
-                        requestedDateTime: `${e.target.value}T${time}`,
+                        requestedDateTime: newDateTime,
                       });
+
+                      // (เรียกฟังก์ชันยิง API ที่เราสร้าง)
+                      await checkDateTimeAvailability(newDateTime);
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -545,30 +627,20 @@ export default function BookingModal({ onClose, onSuccess }) {
                         ? formData.requestedDateTime.slice(11, 16)
                         : ""
                     }
-                    onChange={async (e) => {
+                    onChange={async (e) => { //
                       const date = formData.requestedDateTime
                         ? formData.requestedDateTime.slice(0, 10)
                         : new Date().toISOString().slice(0, 10);
-                      const newDateTime = `${date}T${e.target.value}`;
+                      
+                      const newDateTime = `${date}T${e.target.value}`; //
+                      
                       setFormData({
                         ...formData,
-                        requestedDateTime: newDateTime,
+                        requestedDateTime: newDateTime, //
                       });
 
-                      try {
-                        const res = await api.get(
-                          "/booking/check-availability",
-                          {
-                            params: { dateTime: newDateTime },
-                          }
-                        );
-                        setTimeAvailable(res.data.available);
-                        setAvailabilityMessage(res.data.message);
-                      } catch (err) {
-                        console.error("Error checking availability:", err);
-                        setTimeAvailable(false);
-                        setAvailabilityMessage("ไม่สามารถตรวจสอบเวลาได้");
-                      }
+                      // (เรียกฟังก์ชันยิง API ที่เราสร้าง แทนโค้ด try/catch เดิม)
+                      await checkDateTimeAvailability(newDateTime);
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
