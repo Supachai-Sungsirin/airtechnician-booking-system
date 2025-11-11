@@ -30,10 +30,14 @@ export default function BookingHistory({
     setShowReviewModal(true)
   }
 
-  // กรอง booking ที่เสร็จสิ้นหรือยกเลิก
-  const filteredBookings = bookings
-    .filter((b) => ["completed", "cancelled"].includes(b.status))
-    .filter((b) => (filterStatus === "all" ? true : b.status === filterStatus))
+  // 1. กรองเอาเฉพาะสถานะที่ "เกี่ยวข้องกับประวัติ" ก่อนเสมอ
+  const relevantBookings = bookings.filter((b) => 
+    b.status === "completed" || b.status === "cancelled"
+  );
+
+  // 2. นำรายการที่กรองแล้ว (relevantBookings) มาใช้กับ Dropdown filter
+  const filteredBookings = relevantBookings
+    .filter((b) => (filterStatus === "all" ? true : b.status === filterStatus));
 
   return (
     <>
@@ -75,7 +79,6 @@ export default function BookingHistory({
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-start gap-4">
-                      {/* --- ⭐️ (เริ่มแก้ไข) --- */}
                       {booking.technicianId?.userId?.profileImageUrl ? (
                         // 1. ถ้าช่างมีรูปโปรไฟล์
                         <img
@@ -95,7 +98,6 @@ export default function BookingHistory({
                           {booking.status === "completed" ? "✓" : "✕"}
                         </div>
                       )}
-                      {/* --- ⭐️ (จบแก้ไข) --- */}
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900">
                           {booking.technicianId?.userId?.fullName || "ไม่มีข้อมูลช่าง"}
@@ -127,7 +129,9 @@ export default function BookingHistory({
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                       {getStatusText(booking.status)}
                     </span>
-                    {booking.status === "completed" && !booking.hasReview && (
+                    {booking.status === "completed" && 
+                      booking.paymentStatus === "paid" &&
+                      !booking.hasReview && (
                       <button
                         onClick={() => handleReview(booking)}
                         className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
