@@ -6,8 +6,14 @@ import Service from "../models/Service.js";
 // สร้าง Booking + Match ช่างตามเขต
 export const createBooking = async (req, res) => {
   try {
-    const { requestedDateTime, address, services, problemDescription } =
-      req.body;
+    // 1. รับ preferredTechnicianId จาก req.body
+    const {
+      requestedDateTime,
+      address,
+      services,
+      problemDescription,
+      preferredTechnicianId, // 👈  เพิ่มตัวนี้
+    } = req.body;
     const customerId = req.user.id;
 
     const customer = await User.findById(customerId);
@@ -15,27 +21,79 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ message: "กรุณาเพิ่มเขตที่อยู่ก่อนจอง" });
     }
 
-    // 1. "ตัด" คำว่า "เขต" และ "ช่องว่าง" ออกจาก customer.district
-    //    เช่น " เขตบางบอน " จะกลายเป็น "บางบอน"
-    const cleanDistrict = (customer.district || "").replace("เขต", "").trim();
-
-    // 2. สร้าง Regular Expression (Regex)
-    //    - 'i' = case-insensitive (ไม่สนตัวพิมพ์เล็ก/ใหญ่)
-    const districtRegex = new RegExp(cleanDistrict, "i"); // 3. ค้นหาช่างด้วย Regex (และเพิ่ม active: true)
-
-    const technician = await Technician.findOne({
-      status: "approved",
-      active: true, // เพิ่มเงื่อนไขนี้ให้ตรงกับ searchController
-      serviceArea: { $regex: districtRegex }, // <-- 4. เปลี่ยนมาใช้ $regex
-    }).populate("userId");
-
-    if (!technician) {
+    const requestedServiceIds = services.map((s) => s.serviceId);
+    if (requestedServiceIds.length === 0) {
       return res
-        .status(404)
-        .json({ message: `ยังไม่มีช่างให้บริการในเขต ${customer.district}` });
+        .status(400)
+        .json({ message: "กรุณาเลือกบริการอย่างน้อย 1 รายการ" });
     }
 
-    // คำนวณราคารวม
+    // 2. ประกาศตัวแปร technician
+    let technician;
+
+    if (preferredTechnicianId) {
+      // 3. ถ้ามีการเลือกช่างมา (Scenario 1: User Selected)
+      console.log(
+        `[Booking] Attempting to book preferred tech: ${preferredTechnicianId}`
+      );
+      
+      technician = await Technician.findOne({
+        _id: preferredTechnicianId,
+        status: "approved",
+        active: true,
+      }).populate("userId");
+
+      if (!technician) {
+        // กรณีช่างที่เลือกมา หายไปจากระบบ หรือไม่อนุมัติ/ไม่ active
+        return res
+          .status(404)
+          .json({ message: "ช่างที่คุณเลือกไม่พร้อมให้บริการ (อาจถูกระงับหรือออฟไลน์)" });
+      }
+      
+      // (Optional Check) คุณอาจจะอยากเช็กว่าช่างที่เลือกมายังรับบริการนี้และอยู่ในเขตนี้จริงๆ
+      // แต่โดยทั่วไปเราเชื่อถือ Frontend ที่กรองมาให้แล้วได้
+
+    } else {
+      // 4. ถ้าไม่ได้เลือกช่างมา (Scenario 2: Auto-Assign - โค้ดเดิมของคุณ)
+      console.log("[Booking] No preferred tech. Auto-assigning...");
+      
+      const cleanDistrict = (customer.district || "").replace("เขต", "").trim();
+      const districtRegex = new RegExp(cleanDistrict, "i");
+
+      technician = await Technician.findOne({
+        status: "approved",
+        active: true,
+        serviceArea: { $regex: districtRegex },
+        services: { $all: requestedServiceIds },
+      }).populate("userId");
+    }
+
+    // 5. ย้าย Logic "ไม่พบช่าง" มาไว้ตรงนี้
+    if (!technician) {
+      // (โค้ดส่วนนี้คือโค้ดเดิมของคุณ)
+      // ลองเช็กว่าจริงๆ แล้วในเขตนี้มีช่างไหม
+      const cleanDistrict = (customer.district || "").replace("เขต", "").trim();
+      const districtRegex = new RegExp(cleanDistrict, "i");
+      
+      const techInDistrict = await Technician.findOne({
+        status: "approved",
+        active: true,
+        serviceArea: { $regex: districtRegex },
+      });
+      if (!techInDistrict) {
+        // ถ้าไม่มีช่างในเขตเลย
+        return res
+          .status(404)
+          .json({ message: `ยังไม่มีช่างให้บริการในเขต ${customer.district}` });
+      } else {
+        // ถ้ามีช่าง แต่ช่างคนนั้นทำบริการที่ร้องขอไม่ได้
+        return res.status(404).json({
+          message: `ขออภัย, ช่างในเขต ${customer.district} ไม่ได้รับบริการที่คุณเลือกทั้งหมด`,
+        });
+      }
+    }
+
+    // 6. คำนวณราคา (โค้ดเดิม)
     let totalPrice = 0;
     const bookingServices = [];
 
@@ -44,10 +102,14 @@ export const createBooking = async (req, res) => {
       if (!service) return res.status(404).json({ message: "Service ไม่พบ" });
 
       // หา option ตาม BTU
-      let option = service.options.find((o) => o.btuRange === s.btuRange);
-      if (!option) {
+      let option = service.options.find((o) => (o.btuRange || "") === (s.btuRange || "")); // (แก้ให้ตรงเป๊ะ)
+      if (!option && service.options.length > 0) {
         // ถ้าไม่มี BTU ที่ตรง ใช้ option แรก
         option = service.options[0];
+      }
+
+      if (!option) {
+         return res.status(400).json({ message: `ไม่พบ Option สำหรับ Service ${service.name}`});
       }
 
       const price =
@@ -59,15 +121,17 @@ export const createBooking = async (req, res) => {
 
       bookingServices.push({
         serviceId: service._id,
+        name: service.name, // (แนะนำให้เพิ่ม)
         btuRange: s.btuRange,
         quantity: s.quantity || 1,
         price: price,
       });
     }
 
+    // 7. สร้าง Booking (โค้ดเดิม)
     const newBooking = new Booking({
       customerId,
-      technicianId: technician._id,
+      technicianId: technician._id, // 👈 นี่คือ ID ที่ถูกต้องแล้ว
       services: bookingServices,
       requestedDateTime,
       address,
@@ -83,8 +147,8 @@ export const createBooking = async (req, res) => {
       message: `จองสำเร็จ! ระบบได้แมทช์ช่างในเขต ${customer.district} แล้ว`,
       bookingId: newBooking._id,
       assignedTechnician: {
-        name: technician.userId.fullName,
-        phone: technician.userId.phone,
+        name: technician.userId.fullName, // 👈 นี่คือชื่อที่ถูกต้องแล้ว
+        phone: technician.userId.phone, // 👈 นี่คือเบอร์ที่ถูกต้องแล้ว
       },
       totalPrice,
     });
@@ -291,4 +355,38 @@ export const checkAvailability = async (req, res) => {
     console.error("Error checking booking availability:", error);
     return res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
   }
+};
+
+export const mockCompletePayment = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({ message: "ไม่พบการจองนี้" });
+    }
+
+    // ตรวจสอบว่าเป็นเจ้าของ booking
+    if (booking.customerId.toString() !== req.user.id) {
+      return res.status(401).json({ message: "ไม่มีสิทธิ์ในการเข้าถึง" });
+    }
+
+    // ตรวจสอบสถานะก่อนจ่าย
+    if (booking.status !== "completed") {
+      return res.status(400).json({ message: "ช่างยังทำงานไม่เสร็จ" });
+    }
+
+    if (booking.paymentStatus === "paid") {
+      return res.status(400).json({ message: "การจองนี้ถูกชำระเงินแล้ว" });
+    }
+
+    // อัปเดตสถานะการจ่ายเงิน
+    booking.paymentStatus = "paid";
+    
+    const updatedBooking = await booking.save();
+    res.status(200).json(updatedBooking);
+
+  } catch (error) {
+    console.error("Error in mockCompletePayment:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
 };

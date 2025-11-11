@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 export default function SearchTechnicians({
   onClose,
@@ -11,10 +11,28 @@ export default function SearchTechnicians({
   handleConfirmBooking,
   loading,
 }) {
+
+  // ใช้ selectedTechnicianId แทน object
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState(
+    selectedTechnician?._id || null
+  );
+  useEffect(() => {
+    setSelectedTechnicianId(selectedTechnician?._id || null);
+  }, [selectedTechnician]);
+  
+
+  // ฟังก์ชันยืนยันการจอง
+  const confirmBooking = () => {
+  const tech = availableTechnicians.find(t => t._id === selectedTechnicianId) || null;
+  setSelectedTechnician(tech);
+  handleConfirmBooking(tech);
+};
+
   return (
     <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
+          {/* Header */}
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
@@ -61,58 +79,44 @@ export default function SearchTechnicians({
                 {availableTechnicians.map((tech) => (
                   <div
                     key={tech._id}
-                    onClick={() => setSelectedTechnician(tech)}
+                    onClick={() => setSelectedTechnicianId(tech._id)}
                     className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                      selectedTechnician?._id === tech._id
+                      selectedTechnicianId === tech._id
                         ? "border-blue-500 bg-blue-50 shadow-md"
                         : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
                     }`}
                   >
-{/* --- ⭐️ (แก้ไข/เพิ่ม Layout ตรงนี้) --- */}
                     <div className="flex items-center justify-between gap-4">
-                      {/* 👇 (เพิ่ม IMG TAG) */}
                       <img
                         src={
-                          tech.profileImageUrl || // (อ่านจาก prop แบบแบน)
+                          tech.profileImageUrl ||
                           "https://via.placeholder.com/100.png?text=User"
                         }
-                        alt={tech.name || "Profile"} // (อ่านจาก prop แบบแบน)
+                        alt={tech.name || "Profile"}
                         className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 flex-shrink-0"
                       />
-
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-semibold text-gray-900">
-                            {tech.name} {/* (อันนี้ถูกแล้ว) */}
+                            {tech.name}
                           </h4>
-                          {selectedTechnician?._id === tech._id && ( //
+                          {selectedTechnicianId === tech._id && (
                             <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
                               เลือกแล้ว
-                            </span> //
+                            </span>
                           )}
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
-                          <p>📞 {tech.phone}</p> {/* (อันนี้ถูกแล้ว) */}
-                          {tech.email && <p>✉️ {tech.email}</p>} {/* (อันนี้ถูกแล้ว) */}
-                          {tech.serviceAreas &&
-                            tech.serviceAreas.length > 0 && ( //
-                              <p>
-                                📍 พื้นที่ให้บริการ:{" "}
-                                {tech.serviceAreas.join(", ")} {/* (อันนี้ถูกแล้ว) */}
-                              </p> //
-                            )}
-                          {tech.specializations &&
-                            tech.specializations.length > 0 && ( //
-                              <p>
-                                🔧 ความเชี่ยวชาญ:{" "}
-                                {tech.specializations.join(", ")} {/* (อันนี้ถูกแล้ว) */}
-                              </p> //
-                            )}
-                          {tech.rating && ( //
-                            <p>
-                              ⭐ คะแนน: {tech.rating.toFixed(1)} (
-                              {tech.completedJobs || 0} งาน) {/* (อันนี้ถูกแล้ว) */}
-                            </p> //
+                          <p>📞 {tech.phone}</p>
+                          {tech.email && <p>✉️ {tech.email}</p>}
+                          {tech.serviceAreas?.length > 0 && (
+                            <p>📍 พื้นที่ให้บริการ: {tech.serviceAreas.join(", ")}</p>
+                          )}
+                          {tech.specializations?.length > 0 && (
+                            <p>🔧 ความเชี่ยวชาญ: {tech.specializations.join(", ")}</p>
+                          )}
+                          {tech.rating && (
+                            <p>⭐ คะแนน: {tech.rating.toFixed(1)} ({tech.completedJobs || 0} งาน)</p>
                           )}
                         </div>
                       </div>
@@ -144,18 +148,18 @@ export default function SearchTechnicians({
             </button>
             <button
               type="button"
-              onClick={handleConfirmBooking}
-              disabled={loading|| availableTechnicians.length === 0}
+              onClick={confirmBooking}
+              disabled={loading || availableTechnicians.length === 0}
               className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading
                 ? "กำลังจอง..."
-                : selectedTechnician
+                : selectedTechnicianId
                 ? "ยืนยันการจองกับช่างที่เลือก"
                 : "ยืนยันการจอง"}
             </button>
           </div>
-          {!selectedTechnician && availableTechnicians.length > 0 && (
+          {!selectedTechnicianId && availableTechnicians.length > 0 && (
             <p className="text-xs text-gray-500 text-center mt-3">
               *หากไม่เลือกช่าง ระบบจะมอบหมายช่างที่เหมาะสมให้อัตโนมัติ
             </p>

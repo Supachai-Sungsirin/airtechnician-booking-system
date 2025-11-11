@@ -7,6 +7,7 @@ import BookingModal from "../components/customer/BookingModal";
 import ReviewModal from "../components/customer/ReviewModal";
 import ProfileSection from "../components/customer/profileSection";
 import logoImage from "../assets/logo.png";
+import MockPaymentModal from "../components/customer/MockPaymentModal";
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
@@ -17,8 +18,10 @@ export default function CustomerDashboard() {
   const [bookings, setBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
 
+  const [selectedTechnician, setSelectedTechnician] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -52,6 +55,16 @@ export default function CustomerDashboard() {
     fetchData();
   }, [navigate]);
 
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false); // อัปเดต UI ทันที (หรือจะ fetch ใหม่ก็ได้)
+    setBookings((currentBookings) =>
+      currentBookings.map((b) =>
+        b._id === selectedBooking._id ? { ...b, paymentStatus: "paid" } : b
+      )
+    ); // แนะนำให้ fetch ใหม่เพื่อให้ข้อมูลตรงกัน
+    fetchMyBookings();
+  };
+
   const fetchMyBookings = async () => {
     setBookingsLoading(true);
     try {
@@ -64,7 +77,8 @@ export default function CustomerDashboard() {
     }
   };
 
-  const handleConfirmLogout = () => { //
+  const handleConfirmLogout = () => {
+    //
     localStorage.removeItem("token"); //
     localStorage.removeItem("role"); //
     localStorage.removeItem("user"); //
@@ -81,7 +95,15 @@ export default function CustomerDashboard() {
 
   const currentBookings = bookings.filter(
     (booking) =>
-      booking.status !== "completed" && booking.status !== "cancelled"
+      !["completed", "cancelled"].includes(booking.status) ||
+      (booking.status === "completed" &&
+        booking.paymentStatus === "pending_payment")
+  ); // ✅ 1B. งานประวัติ = (งานที่จ่ายเงินแล้ว) หรือ (งานที่ถูกยกเลิก)
+
+  const historyBookings = bookings.filter(
+    (booking) =>
+      (booking.status === "completed" && booking.paymentStatus === "paid") ||
+      booking.status === "cancelled"
   );
 
   return (
@@ -182,6 +204,7 @@ export default function CustomerDashboard() {
               bookingsLoading={bookingsLoading}
               setSelectedBooking={setSelectedBooking}
               setShowReviewModal={setShowReviewModal}
+              setShowPaymentModal={setShowPaymentModal}
               fetchMyBookings={fetchMyBookings}
             />
           </div>
@@ -198,6 +221,8 @@ export default function CustomerDashboard() {
             <BookingHistory
               bookings={bookings}
               bookingsLoading={bookingsLoading}
+              setSelectedBooking={setSelectedBooking}
+              setShowReviewModal={setShowReviewModal}
             />
           </div>
         ) : (
@@ -208,9 +233,11 @@ export default function CustomerDashboard() {
       {showBookingModal && (
         <BookingModal
           onClose={() => setShowBookingModal(false)}
-          onSuccess={() => {
+          onSuccess={(tech) => {
+            setSelectedTechnician(tech); // เก็บไว้ใน parent
             setShowBookingModal(false);
-            fetchMyBookings();
+            fetchMyBookings(); // อัปเดต booking list
+            console.log("Technician ที่เลือก:", tech);
           }}
         />
       )}
@@ -230,6 +257,14 @@ export default function CustomerDashboard() {
 
             fetchMyBookings();
           }}
+        />
+      )}
+
+      {showPaymentModal && selectedBooking && (
+        <MockPaymentModal
+          booking={selectedBooking}
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
         />
       )}
 

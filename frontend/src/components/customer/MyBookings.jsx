@@ -4,11 +4,19 @@ import api from "../../services/api"
 export default function MyBookings({
   bookings,
   bookingsLoading,
+  setSelectedBooking,
+  setShowPaymentModal,
   fetchMyBookings,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const handlePayment = (booking) => {
+    setSelectedBooking(booking);
+    setShowPaymentModal(true);
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -131,6 +139,20 @@ export default function MyBookings({
             </div>
 
             <div className="flex flex-col items-end gap-2">
+              {booking.status === "completed" && booking.paymentStatus === "pending_payment" && (
+            <button
+              onClick={() => handlePayment(booking)}
+              className="px-4 py-2 w-full sm:w-auto text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              ชำระเงิน ฿{booking.finalPrice}
+            </button>
+          )}
+  
+          {booking.status === "completed" && booking.paymentStatus === "paid" && (
+            <span className="px-3 py-1 text-sm text-green-600 bg-green-50 rounded-lg">
+              ✓ ชำระเงินแล้ว
+            </span>
+          )}
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                 {getStatusText(booking.status)}
               </span>

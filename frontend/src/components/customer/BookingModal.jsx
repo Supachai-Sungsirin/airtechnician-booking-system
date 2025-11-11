@@ -236,7 +236,8 @@ export default function BookingModal({ onClose, onSuccess }) {
     }
   };
 
-  const handleConfirmBooking = async () => {
+  const handleConfirmBooking = async (tech) => {
+    setSelectedTechnician(tech);
     setLoading(true);
 
     try {
@@ -263,8 +264,8 @@ export default function BookingModal({ onClose, onSuccess }) {
         problemDescription: formData.problemDescription,
       };
 
-      if (selectedTechnician) {
-        bookingData.preferredTechnicianId = selectedTechnician._id;
+      if (tech) {
+        bookingData.preferredTechnicianId = tech._id;
       }
 
       const bookingResponse = await api.post("/booking", bookingData);
@@ -371,7 +372,7 @@ export default function BookingModal({ onClose, onSuccess }) {
 
             {/* ปุ่มปิด (เรียก onSuccess) */}
             <button
-              onClick={onSuccess}
+              onClick={() => onSuccess(selectedTechnician)}
               className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               รับทราบ
@@ -387,7 +388,7 @@ export default function BookingModal({ onClose, onSuccess }) {
     return (
       <SearchTechnicians
         onClose={onClose}
-        formData={formData}
+        formData={formData} 
         estimatedPrice={estimatedPrice}
         availableTechnicians={availableTechnicians}
         selectedTechnician={selectedTechnician}

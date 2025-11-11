@@ -1,18 +1,30 @@
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import api from "../../services/api"
 
 export default function ReviewModal({ booking, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
-    rating: 5,
+    rating: 0,
     comment: "",
   })
   const [loading, setLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+  const [hoverRating, setHoverRating] = useState(0)
+
+  useEffect(() => {
+    setFormData({ rating: 0, comment: "" })
+    setLoading(false)
+    setSuccessMessage(null)
+    setErrorMessage(null)
+    setHoverRating(0)
+  }, [booking]) // ทำงานทุกครั้งที่ booking เปลี่ยน
+
+const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setSuccessMessage(null)
+    setErrorMessage(null)
 
     try {
       await api.post("/reviews", {
@@ -20,22 +32,24 @@ export default function ReviewModal({ booking, onClose, onSuccess }) {
         rating: formData.rating,
         comment: formData.comment,
       })
-      alert("ส่งรีวิวเรียบร้อยแล้ว ขอบคุณสำหรับความคิดเห็น!")
-      onSuccess()
+      setSuccessMessage("ส่งรีวิวเรียบร้อยแล้ว ขอบคุณสำหรับความคิดเห็น!")
+      setTimeout(() => {
+        onSuccess()
+      }, 1500)
     } catch (error) {
       console.error("Error submitting review:", error)
-      if (error.response && error.response.data && error.response.data.message) {
-        alert(error.response.data.message)
-      } else {
-        alert("เกิดข้อผิดพลาดในการส่งรีวิว กรุณาลองใหม่อีกครั้ง")
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+      if (error.response?.data?.message) {
+        setErrorMessage(error.response.data.message)
+      } else {
+        setErrorMessage("เกิดข้อผิดพลาดในการส่งรีวิว กรุณาลองใหม่อีกครั้ง")
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl max-w-md w-full">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
@@ -43,30 +57,52 @@ export default function ReviewModal({ booking, onClose, onSuccess }) {
               <h2 className="text-2xl font-bold text-gray-900">ให้คะแนนและรีวิว</h2>
               <p className="text-gray-600 mt-1">ช่าง: {booking.technicianId?.userId?.fullName || "ช่าง"}</p>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl" disabled={loading}>
               ×
             </button>
           </div>
 
+          {/* ข้อความแจ้งเตือน */}
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+              ✓ {successMessage}
+            </div>
+          )}
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+              ⚠️ {errorMessage}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">ให้คะแนน *</label>
-              <div className="flex gap-2 justify-center">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, rating: star })}
-                    className={`text-4xl transition-all ${
-                      star <= formData.rating ? "text-yellow-500" : "text-gray-300"
-                    } hover:scale-110`}
-                  >
-                    ⭐
-                  </button>
-                ))}
-              </div>
-              <p className="text-center mt-2 text-gray-600 font-medium">{formData.rating} ดาว</p>
-            </div>
+              <div 
+                className="flex gap-2 justify-center"
+                onMouseLeave={() => setHoverRating(0)} // ⬅️ เมื่อเมาส์ออก ให้กลับไปใช้ค่าที่เลือกไว้
+              >
+                {[1, 2, 3, 4, 5].map((star) => {
+                  // ⭐️ 4. เช็กว่าดาวควรจะทึบหรือไม่ (จากค่า hover หรือค่าที่คลิก)
+                  const isFilled = star <= (hoverRating || formData.rating)
+                  return (
+                    <button
+                      key={star}
+                      type="button"
+                      // ⭐️ 5. อัปเดต onClick และเพิ่ม onMouseEnter
+                      onClick={() => setFormData({ ...formData, rating: star })}
+                      onMouseEnter={() => setHoverRating(star)} // ⬅️ เมื่อเมาส์เข้า ให้แสดงดาวตาม
+                      className={`text-4xl transition-all ${
+                        // ⭐️ 6. อัปเดตสี
+                        isFilled ? "text-yellow-500" : "text-gray-300"
+                      } hover:scale-110`}
+                    >
+                      {/* ⭐️ 7. เปลี่ยนเป็นดาวทึบ/โปร่ง */}
+                      {isFilled ? '★' : '☆'}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">ความคิดเห็น *</label>
