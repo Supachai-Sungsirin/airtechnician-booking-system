@@ -21,6 +21,21 @@ const JobIcon = () => (
     ></path>
   </svg>
 )
+const HistoryIcon = () => (
+  <svg
+    className='w-5 h-5 mr-3'
+    fill='none'
+    stroke='currentColor'
+    viewBox='0 0 24 24'
+  >
+    <path
+      strokeLinecap='round'
+      strokeLinejoin='round'
+      strokeWidth='2'
+      d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+    ></path>
+  </svg>
+)
 const ReviewIcon = () => (
   <svg
     className='w-5 h-5 mr-3'
@@ -88,7 +103,7 @@ const TechnicianDashboard = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('bookings')
+  const [activeTab, setActiveTab] = useState('activeJobs')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
@@ -101,7 +116,7 @@ const TechnicianDashboard = () => {
     }
     setToken(storedToken)
 
-    if (activeTab === 'bookings') {
+    if (activeTab === 'activeJobs' || activeTab === 'historyJobs') {
       fetchBookings()
     }
   }, [navigate, activeTab])
@@ -132,6 +147,23 @@ const TechnicianDashboard = () => {
     }
   }
 
+  // กรอง Array 'bookings' ออกเป็น 2 ส่วน ---
+
+  const activeJobs = bookings.filter((booking) => {
+    const status = booking.status.toLowerCase()
+    return (
+      status === 'pending' ||
+      status === 'accepted' ||
+      status === 'on_the_way' ||
+      status === 'working'
+    )
+  })
+
+  const historyJobs = bookings.filter((booking) => {
+    const status = booking.status.toLowerCase()
+    return status === 'completed' || status === 'cancelled'
+  })
+
   return (
     <div className='flex h-screen bg-gray-100'>
       {/* --- Overlay (พื้นหลังจางๆ บนมือถือ) --- */}
@@ -156,17 +188,32 @@ const TechnicianDashboard = () => {
         <nav className='mt-6'>
           <button
             onClick={() => {
-              setActiveTab('bookings')
+              setActiveTab('activeJobs')
               setIsSidebarOpen(false)
             }}
             className={`flex items-center w-full px-6 py-3 text-left ${
-              activeTab === 'bookings'
+              activeTab === 'activeJobs'
                 ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
                 : 'text-gray-600 hover:bg-gray-50'
             }`}
           >
             <JobIcon />
-            รายการงาน
+            รายการงานที่ได้รับมอบหมาย
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('historyJobs')
+              setIsSidebarOpen(false)
+            }}
+            className={`flex items-center w-full px-6 py-3 text-left ${
+              activeTab === 'historyJobs'
+                ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <HistoryIcon />
+            ประวัติงาน
           </button>
 
           <button
@@ -186,16 +233,19 @@ const TechnicianDashboard = () => {
 
           {/* --- 3. (ใหม่) ปุ่มโปรไฟล์ --- */}
           <button
-                        onClick={() => { setActiveTab('profile'); setIsSidebarOpen(false); }}
-                        className={`flex items-center w-full px-6 py-3 text-left ${
-                            activeTab === 'profile' 
-                            ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' 
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                    >
-                        <ProfileIcon />
-                        โปรไฟล์
-                    </button>
+            onClick={() => {
+              setActiveTab('profile')
+              setIsSidebarOpen(false)
+            }}
+            className={`flex items-center w-full px-6 py-3 text-left ${
+              activeTab === 'profile'
+                ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <ProfileIcon />
+            โปรไฟล์
+          </button>
 
           <button
             onClick={handleLogout}
@@ -222,15 +272,14 @@ const TechnicianDashboard = () => {
           </div>
         </header>
 
-        {/* --- เนื้อหาหลัก (ที่สลับตามแท็บ) --- */}
+        {/* --- เนื้อหาหลัก --- */}
         <main className='p-8'>
-          {activeTab === 'bookings' && (
+          {activeTab === 'activeJobs' && (
             <div>
               <h2 className='text-2xl font-bold mb-4 hidden lg:block'>
-                งานทั้งหมดของคุณ
+                รายการงานที่ยังไม่สำเร็จ
               </h2>
 
-              {/* --- (เติมโค้ดที่ขาด) --- */}
               {isLoading && <p>กำลังโหลดข้อมูลงาน...</p>}
               {error && <p className='text-red-500'>{error}</p>}
               {!isLoading && !error && bookings.length === 0 && (
@@ -239,11 +288,36 @@ const TechnicianDashboard = () => {
 
               {/* (ส่วนแสดง Job Cards) */}
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-                {bookings.map((booking) => (
+                {activeJobs.map((booking) => (
                   <TechJobCard
                     key={booking._id}
                     booking={booking}
-                    token={token} // (ส่ง Token ให้ JobCard ไว้เผื่อใช้)
+                    token={token}
+                  />
+                ))}
+              </div>
+
+            </div>
+          )}
+
+          {activeTab === 'historyJobs' && (
+            <div>
+              <h2 className='text-2xl font-bold mb-4'>
+                ประวัติงาน (งานที่เสร็จสิ้น/ปฏิเสธ)
+              </h2>
+
+              {isLoading && <p>กำลังโหลดข้อมูลงาน...</p>}
+              {error && <p className='text-red-500'>{error}</p>}
+              {!isLoading && !error && historyJobs.length === 0 && (
+                <p>ยังไม่มีประวัติการทำงาน</p>
+              )}
+
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+                {historyJobs.map((booking) => (
+                  <TechJobCard
+                    key={booking._id}
+                    booking={booking}
+                    token={token}
                   />
                 ))}
               </div>
@@ -252,7 +326,6 @@ const TechnicianDashboard = () => {
 
           {activeTab === 'reviews' && <TechMyReviews />}
 
-          {/* --- 5. (นี่คือส่วนที่ขาด) แสดงหน้าโปรไฟล์ --- */}
           {activeTab === 'profile' && <TechMyProfile />}
         </main>
       </div>

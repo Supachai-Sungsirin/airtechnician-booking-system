@@ -166,8 +166,13 @@ export const uploadBookingPhotos = async (req, res) => {
 // ช่าง: ปิดงาน (Complete Booking)
 export const completeBooking = async (req, res) => {
   try {
-    // รับ "โน้ตสรุปงาน" จาก Body
-    const { technicianNotes } = req.body
+    const { technicianNotes, finalPrice } = req.body
+
+    // ตรวจสอบว่าส่งราคาสุทธิมาถูกต้อง (สำคัญมาก!)
+    const parsedPrice = parseFloat(finalPrice)
+    if (!parsedPrice || parsedPrice <= 0) {
+      return res.status(400).json({ message: 'กรุณาระบุราคาสุทธิที่ถูกต้อง' })
+    }
 
     // หาโปรไฟล์ช่าง (จาก Token)
     const tech = await Technician.findOne({ userId: req.user.id })
@@ -183,10 +188,12 @@ export const completeBooking = async (req, res) => {
       },
       {
         status: 'completed',
-        completedAt: Date.now(), // ใช้วันที่ปัจจุบัน
-        technicianNotes: technicianNotes || '', // เก็บโน้ต (ถ้ามี)
+        completedAt: Date.now(),
+        technicianNotes: technicianNotes || '',
+        finalPrice: parsedPrice,
+        paymentStatus: 'pending_payment', // (รอให้ลูกค้าจ่าย)
       },
-      { new: true } // คืนค่าเอกสารที่อัปเดตแล้ว
+      { new: true }
     )
 
     res.json({ message: 'ปิดงานเรียบร้อย', booking })
