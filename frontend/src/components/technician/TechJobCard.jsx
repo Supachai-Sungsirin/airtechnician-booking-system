@@ -11,26 +11,7 @@ const TechJobCard = ({ booking, token }) => {
   const [selectedFiles, setSelectedFiles] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  // --- ฟังก์ชัน 'ปิดงาน' ---
-  const handleCompleteJob = async () => {
-    if (!window.confirm('คุณยืนยันที่จะปิดงานนี้ใช่หรือไม่?')) return
-
-    setIsLoading(true)
-    setError(null)
-    try {
-      // (Backend API: PATCH /technicians/bookings/:id/complete)
-      const API_URL = `/technicians/bookings/${currentBooking._id}/complete`
-      const body = { technicianNotes }
-      const response = await api.patch(API_URL, body)
-
-      alert('ปิดงานเรียบร้อย!')
-      setCurrentBooking(response.data.booking) // อัปเดต UI
-    } catch (err) {
-      setError(err.response?.data?.message || 'เกิดข้อผิดพลาด')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const [finalPrice, setFinalPrice] = useState('')
 
   // --- ฟังก์ชัน 'รับงาน' ---
   const handleAcceptJob = async () => {
@@ -112,6 +93,33 @@ const TechJobCard = ({ booking, token }) => {
     }
   }
 
+  // --- ฟังก์ชัน 'ปิดงาน' ---
+  const handleCompleteJob = async () => {
+    // ตรวจสอบว่ากรอกราคาหรือยัง
+    if (!finalPrice || parseFloat(finalPrice) <= 0) {
+      alert('กรุณากรอกราคาสุทธิให้ถูกต้อง')
+      return
+    }
+
+    if (!window.confirm(`ยืนยันปิดงานด้วยยอด ${finalPrice} บาท?`)) return
+
+    setIsLoading(true)
+    setError(null)
+    try {
+      // (Backend API: PATCH /technicians/bookings/:id/complete)
+      const API_URL = `/technicians/bookings/${currentBooking._id}/complete`
+      const body = { technicianNotes, finalPrice: parseFloat(finalPrice) }
+      const response = await api.patch(API_URL, body)
+
+      alert(response.data.message)
+      setCurrentBooking(response.data.booking) // อัปเดต UI
+    } catch (err) {
+      setError(err.response?.data?.message || 'เกิดข้อผิดพลาด')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // --- (นี่คือ UI ที่มี Logic สลับปุ่ม) ---
   return (
     <div className='job-card bg-white shadow-md rounded-lg p-6 border border-gray-200'>
@@ -142,9 +150,9 @@ const TechJobCard = ({ booking, token }) => {
         ))}
       </ul>
 
-      {/* --- (สำคัญ) Logic การสลับปุ่มตามสถานะ --- */}
+      {/* --- Logic การสลับปุ่มตามสถานะ --- */}
 
-      {/* 1. (นี่คือส่วนที่ขาด) ถ้างานเป็น 'pending' (ตามรูป) */}
+      {/* ถ้างานเป็น 'pending' */}
       {currentBooking.status === 'pending' && (
         <div className='flex gap-2 mt-4'>
           <button
@@ -164,10 +172,10 @@ const TechJobCard = ({ booking, token }) => {
         </div>
       )}
 
-      {/* 2. ถ้างานเป็น 'accepted' */}
+      {/* ถ้างานเป็น 'accepted' */}
       {currentBooking.status === 'accepted' && (
         <div className='complete-section mt-4 border-t pt-4'>
-          {/* --- (ใหม่) ส่วนอัปโหลดรูป --- */}
+          {/* --- ส่วนอัปโหลดรูป --- */}
           <div className='mb-4'>
             <h3 className='font-semibold mb-2'>รูปภาพหน้างาน (ก่อน/หลัง)</h3>
 
@@ -202,6 +210,21 @@ const TechJobCard = ({ booking, token }) => {
           </div>
 
           <h3 className='font-semibold mb-2'>สรุปงาน</h3>
+
+          <div className='mb-3'>
+            <label className='block text-sm text-gray-700 mb-1'>
+              ราคาสุทธิ (บาท) *
+            </label>
+            <input
+              type='number'
+              min='0'
+              placeholder='ระบุยอดที่ลูกค้าต้องจ่ายจริง'
+              value={finalPrice}
+              onChange={(e) => setFinalPrice(e.target.value)}
+              className='w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500'
+            />
+          </div>
+
           <textarea
             rows='3'
             placeholder='เพิ่มโน้ตสรุปงาน (ถ้ามี)...'
@@ -220,10 +243,9 @@ const TechJobCard = ({ booking, token }) => {
         </div>
       )}
 
-      {/* 3. ถ้างานเป็น 'completed' */}
+      {/* ถ้างานเป็น 'completed' */}
       {currentBooking.status === 'completed' && (
         <div>
-          {/* (แสดงรูปที่อัปโหลดแล้ว) */}
           <div className='flex flex-wrap gap-2 mb-2 mt-4'>
             {(currentBooking.jobPhotos || []).map((photoUrl, index) => (
               <img
@@ -234,13 +256,50 @@ const TechJobCard = ({ booking, token }) => {
               />
             ))}
           </div>
+
+          <div className='mt-4 p-3 bg-gray-50 rounded-md'>
+            {/* แสดงราคาประเมิน (totalPrice)
+             * เฉพาะเมื่องานนั้นมี "ซ่อมแอร์" อยู่
+             */}
+            {currentBooking.services.some(
+              (s) => s.serviceId.name === 'ซ่อมแอร์'
+            ) && (
+              <p className='text-sm text-gray-600'>
+                <strong>ราคาประเมิน:</strong> ฿
+                {(currentBooking.totalPrice || 0).toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                })}
+              </p>
+            )}
+            <p>
+              <strong>ราคาสุทธิ:</strong> ฿
+              {(currentBooking.finalPrice || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+              })}
+            </p>
+            <p>
+              <strong>สถานะการชำระเงิน: </strong>
+              <span
+                className={
+                  (currentBooking.paymentStatus || 'pending_payment') === 'paid'
+                    ? 'text-green-600'
+                    : 'text-orange-500'
+                }
+              >
+                {(currentBooking.paymentStatus || 'pending_payment') === 'paid'
+                  ? 'จ่ายแล้ว'
+                  : 'รอชำระเงิน'}
+              </span>
+            </p>
+          </div>
+
           <p className='font-semibold text-green-600 border-t pt-4 mt-4'>
             ✓ งานนี้เสร็จสิ้นแล้ว
           </p>
         </div>
       )}
 
-      {/* 4. ถ้างานถูก 'cancelled' (ปฏิเสธ) */}
+      {/* ถ้างานถูก 'cancelled' */}
       {currentBooking.status === 'cancelled' && (
         <p className='font-semibold text-red-600 border-t pt-4 mt-4'>
           ✗ คุณได้ปฏิเสธงานนี้ไปแล้ว
