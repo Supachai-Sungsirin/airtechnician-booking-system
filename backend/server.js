@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 import connectDB from "./config/db.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerOptions from "./config/swaggerConfig.js";
 import authRoutes from "./routes/authRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import technicianRoutes from "./routes/technicianRoutes.js";
@@ -26,6 +29,9 @@ app.use(passport.initialize());
 app.get("/", (req, res) => {
   res.send("CoolQ App API is running...");
 });
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // routes
 app.use("/auth", authRoutes);
