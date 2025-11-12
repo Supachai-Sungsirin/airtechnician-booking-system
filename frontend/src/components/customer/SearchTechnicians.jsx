@@ -108,7 +108,6 @@ export default function SearchTechnicians({
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
                           <p>📞 {tech.phone}</p>
-                          {tech.email && <p>✉️ {tech.email}</p>}
                           {tech.serviceAreas?.length > 0 && (
                             <p>📍 พื้นที่ให้บริการ: {tech.serviceAreas.join(", ")}</p>
                           )}
