@@ -106,6 +106,8 @@ const TechnicianDashboard = () => {
   const [activeTab, setActiveTab] = useState('activeJobs')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token')
     const storedRole = localStorage.getItem('role')
@@ -121,7 +123,6 @@ const TechnicianDashboard = () => {
     }
   }, [navigate, activeTab])
 
-  // --- (เติมโค้ดที่ขาด) ---
   const fetchBookings = async () => {
     setIsLoading(true)
     setError(null)
@@ -137,31 +138,66 @@ const TechnicianDashboard = () => {
     }
   }
 
-  // --- (เติมโค้ดที่ขาด) ---
-  const handleLogout = () => {
-    if (window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('role')
-      localStorage.removeItem('user')
-      navigate('/login')
-    }
+  const openLogoutModal = () => {
+    setShowLogoutModal(true)
   }
 
-  // กรอง Array 'bookings' ออกเป็น 2 ส่วน ---
+  const closeLogoutModal = () => {
+    setShowLogoutModal(false)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('role')
+    localStorage.removeItem('user')
+    navigate('/login')
+  }
+
+  const handleJobStatusUpdate = (updatedBooking) => {
+    // (สำคัญ) อัปเดต State 'bookings' (ตัวเต็ม)
+    // โดยการค้นหา ID งานเก่า และแทนที่ด้วย 'updatedBooking' (ข้อมูลใหม่)
+    setBookings((prevBookings) =>
+      prevBookings.map((b) =>
+        b._id === updatedBooking._id ? updatedBooking : b
+      )
+    )
+  }
 
   const activeJobs = bookings.filter((booking) => {
-    const status = booking.status.toLowerCase()
-    return (
-      status === 'pending' ||
-      status === 'accepted' ||
-      status === 'on_the_way' ||
-      status === 'working'
-    )
+    const status = (booking.status || '').toLowerCase()
+    // (ใช้ Default 'pending_payment' สำหรับข้อมูลเก่าที่ยังไม่มี field นี้)
+    const paymentStatus = (
+      booking.paymentStatus || 'pending_payment'
+    ).toLowerCase()
+
+    // (งานที่กำลังทำ: pending, accepted, on_the_way, working)
+    if (['pending', 'accepted', 'on_the_way', 'working'].includes(status)) {
+      return true
+    }
+
+    // (งานที่เสร็จแล้ว แต่ 'รอชำระเงิน')
+    if (status === 'completed' && paymentStatus === 'pending_payment') {
+      return true
+    }
+
+    return false
   })
 
   const historyJobs = bookings.filter((booking) => {
-    const status = booking.status.toLowerCase()
-    return status === 'completed' || status === 'cancelled'
+    const status = (booking.status || '').toLowerCase()
+    const paymentStatus = (
+      booking.paymentStatus || 'pending_payment'
+    ).toLowerCase() // (งานที่เสร็จแล้ว และ 'จ่ายแล้ว')
+
+    if (status === 'completed' && paymentStatus === 'paid') {
+      return true
+    } // (งานที่ถูกปฏิเสธ/ยกเลิก)
+
+    if (status === 'cancelled') {
+      return true
+    }
+
+    return false
   })
 
   return (
@@ -248,7 +284,7 @@ const TechnicianDashboard = () => {
           </button>
 
           <button
-            onClick={handleLogout}
+            onClick={openLogoutModal}
             className='flex items-center w-full px-6 py-3 text-left text-gray-600 hover:bg-gray-50 mt-10'
           >
             <LogoutIcon />
@@ -271,64 +307,91 @@ const TechnicianDashboard = () => {
             </button>
           </div>
         </header>
-
         {/* --- เนื้อหาหลัก --- */}
         <main className='p-8'>
+          {/* --- แท็บ 1: Active Jobs --- */}
           {activeTab === 'activeJobs' && (
             <div>
               <h2 className='text-2xl font-bold mb-4 hidden lg:block'>
-                รายการงานที่ยังไม่สำเร็จ
+                งานที่ต้องจัดการ
               </h2>
-
               {isLoading && <p>กำลังโหลดข้อมูลงาน...</p>}
               {error && <p className='text-red-500'>{error}</p>}
-              {!isLoading && !error && bookings.length === 0 && (
-                <p>คุณยังไม่มีงานที่ได้รับมอบหมาย</p>
-              )}
-
+              {!isLoading &&
+                !error &&
+                activeJobs.length === 0 && ( // (แก้ให้ใช้ activeJobs)
+                  <p>คุณยังไม่มีงานที่ได้รับมอบหมาย</p>
+                )}
               {/* (ส่วนแสดง Job Cards) */}
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-                {activeJobs.map((booking) => (
-                  <TechJobCard
-                    key={booking._id}
-                    booking={booking}
-                    token={token}
-                  />
-                ))}
+                {activeJobs.map(
+                  (
+                    booking // (ใช้ activeJobs)
+                  ) => (
+                    <TechJobCard
+                      key={booking._id}
+                      booking={booking}
+                      onJobUpdate={handleJobStatusUpdate}
+                    />
+                  )
+                )}
               </div>
-
             </div>
           )}
-
+          {/* --- แท็บ 2: History Jobs --- */}
           {activeTab === 'historyJobs' && (
             <div>
               <h2 className='text-2xl font-bold mb-4'>
                 ประวัติงาน (งานที่เสร็จสิ้น/ปฏิเสธ)
               </h2>
-
               {isLoading && <p>กำลังโหลดข้อมูลงาน...</p>}
               {error && <p className='text-red-500'>{error}</p>}
               {!isLoading && !error && historyJobs.length === 0 && (
                 <p>ยังไม่มีประวัติการทำงาน</p>
               )}
-
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
                 {historyJobs.map((booking) => (
                   <TechJobCard
                     key={booking._id}
                     booking={booking}
-                    token={token}
+                    onJobUpdate={handleJobStatusUpdate}
                   />
                 ))}
               </div>
             </div>
           )}
-
-          {activeTab === 'reviews' && <TechMyReviews />}
-
+                    {activeTab === 'reviews' && <TechMyReviews />}
           {activeTab === 'profile' && <TechMyProfile />}
         </main>
       </div>
+      {showLogoutModal && (
+        <div className='fixed inset-0 bg-gray-900/50 backdrop-blur-md flex items-center justify-center p-4 z-50'>
+          <div className='bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl'>
+            <h3 className='text-xl font-bold text-gray-900 mb-4'>
+              ยืนยันการออกจากระบบ
+            </h3>
+            <p className='text-gray-600 mb-6'>
+              คุณต้องการออกจากระบบใช่หรือไม่?
+            </p>
+            <div className='flex gap-3'>
+              <button
+                type='button'
+                onClick={closeLogoutModal}
+                className='flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium'
+              >
+                ยกเลิก
+              </button>
+              <button
+                type='button'
+                onClick={handleLogout}
+                className='flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium'
+              >
+                ออกจากระบบ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
