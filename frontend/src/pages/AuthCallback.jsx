@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api'; 
+import toast from 'react-hot-toast';
 
 const AuthCallback = () => {
     const location = useLocation();
@@ -12,10 +13,14 @@ const AuthCallback = () => {
         const token = query.get('token');
         const role = query.get('role');
 
-        if (error) {
+        const error = query.get('error');
+
+        if (error) { 
             // กรณีมี Error (เช่น ช่างยังไม่ผ่านอนุมัติ หรือไม่พบผู้ใช้)
-            toast.error("เข้าสู่ระบบไม่สำเร็จ: บัญชีไม่มีสิทธิ์หรือยังไม่ได้รับการอนุมัติ");
-            navigate('http://localhost:5173/login', { replace: true });
+            const errorMessage = decodeURIComponent(error); 
+            toast.error(`เข้าสู่ระบบไม่สำเร็จ: ${errorMessage}`); 
+            
+            navigate('/login', { replace: true }); 
             return;
         }
         if (token && role) {
