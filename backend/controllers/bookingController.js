@@ -289,43 +289,6 @@ export const updateBookingStatus = async (req, res) => {
   }
 };
 
-// ==========================
-// Assign Technician (Admin ใช้)
-// ==========================
-export const assignTechnician = async (req, res) => {
-  try {
-    const { technicianId } = req.body;
-
-    const tech = await Technician.findById(technicianId).populate("userId");
-    if (!tech) return res.status(404).json({ message: "ไม่พบช่าง" });
-
-    const booking = await Booking.findByIdAndUpdate(
-      req.params.id,
-      { technicianId, status: "assigned" },
-      { new: true }
-    )
-      .populate("customerId", "fullName phone district")
-      .populate({
-        path: "technicianId",
-        populate: { path: "userId", select: "fullName phone" },
-      })
-      .populate({
-        path: "services.serviceId",
-        select: "name options",
-      });
-
-    if (!booking) return res.status(404).json({ message: "ไม่พบรายการจอง" });
-
-    res.json({
-      message: `มอบหมายงานให้ ${tech.userId.fullName} แล้ว`,
-      booking,
-    });
-  } catch (error) {
-    console.error("Error assignTechnician:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
 // ตรวจสอบความพร้อมของเวลาจอง
 export const checkAvailability = async (req, res) => {
   try {
