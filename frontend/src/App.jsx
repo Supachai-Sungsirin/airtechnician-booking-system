@@ -7,6 +7,7 @@ import CustomerDashboard from "./pages/CustomerDashboard"
 import Navbar from "./components/Navbar"
 import AdminDashboard from "./pages/AdminDashboard"
 import TechnicianDashboard from "./pages/TechnicianDashboard"
+import AuthCallback from './pages/AuthCallback.jsx'
 
 function AppContent() {
   const location = useLocation()
@@ -23,6 +24,8 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        {/* [ใหม่] Route สำหรับ Google Login Callback */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/register" element={<Register />} />
         <Route path="/technician-register" element={<RegisterTechnician />} />
         <Route path="/CustomerDashboard" element={<CustomerDashboard />} />

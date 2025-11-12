@@ -50,11 +50,41 @@ export const addAdmin = async (req, res) => {
   }
 };
 
+// ลบผู้ใช้ (Customer / Admin / Technician)
+export const deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // ตรวจสอบว่ามีผู้ใช้นี้อยู่หรือไม่
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "ไม่พบผู้ใช้ในระบบ" });
+    }
+
+    // ถ้าผู้ใช้เป็นช่าง ให้ลบข้อมูลจาก Technician ด้วย
+    if (user.role === "technician") {
+      await Technician.findOneAndDelete({ userId: user._id });
+    }
+
+    // ลบข้อมูลผู้ใช้จาก User
+    await User.findByIdAndDelete(userId);
+
+    res.json({
+      success: true,
+      message: `ลบผู้ใช้ (${user.fullName}) สำเร็จ`,
+    });
+  } catch (error) {
+    console.error("Delete user error:", error);
+    res.status(500).json({ message: "เกิดข้อผิดพลาดในการลบผู้ใช้" });
+  }
+};
+
 // อัปเดตสถานะช่าง (approve / reject)
 export const updateTechnicianStatus = async (req, res) => {
   try {
     const technicianId = req.params.id;
-    const { status, rejectReason } = req.body;
+    const { status, reason, rejectReason } = req.body;
+    const finalReason = (reason ?? rejectReason ?? "").trim();
 
     if (!["approved", "rejected"].includes(status)) {
       return res.status(400).json({ message: "สถานะไม่ถูกต้อง" });
@@ -66,26 +96,26 @@ export const updateTechnicianStatus = async (req, res) => {
     }
 
     technician.status = status;
-    technician.rejectReason = status === "rejected" ? rejectReason : "";
+    technician.reason = status === "rejected" ? finalReason : "";
+
     await technician.save();
 
-    res.json({
+    return res.json({
       message: status === "approved" ? "อนุมัติช่างสำเร็จ" : "ปฏิเสธช่างสำเร็จ",
       technician: {
         id: technician._id,
         status: technician.status,
-        rejectReason: technician.rejectReason,
+        reason: technician.reason,
       },
     });
   } catch (error) {
     console.error("Update technician status error:", error);
-    res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
+    return res.status(500).json({ message: "เกิดข้อผิดพลาดในระบบ" });
   }
 };
 
-// เพิ่มงานบริการใหม่
-// controllers/adminController.js (ฟังก์ชัน addService ที่แก้ไข)
 
+// เพิ่มบริการใหม่
 export const addService = async (req, res) => {
   try {
     // 1. รับค่าเฉพาะ name, description, และ options (นำ price ออกไป)
