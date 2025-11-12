@@ -16,6 +16,14 @@ export const getMyReviews = async (req, res) => {
 
     const reviews = await Review.find({ technicianId: tech._id })
       .populate('customerId', 'fullName') // ดึงชื่อลูกค้าที่รีวิว
+      .populate({
+        path: 'bookingId',
+        select: 'services', // (เลือก field 'services' จาก Booking)
+        populate: {
+          path: 'services.serviceId', // (ดึงข้อมูล serviceId ใน Array 'services')
+          select: 'name', // (เอาแค่ 'name' ของ Service)
+        },
+      })
       .sort({ createdAt: -1 }) // เรียงจากใหม่ไปเก่า
 
     res.json(reviews)
@@ -52,13 +60,12 @@ export const getAssignedBookings = async (req, res) => {
 // ช่าง: ปฏิเสธงาน (Reject)
 export const rejectBooking = async (req, res) => {
   try {
-    // 1. หาโปรไฟล์ช่าง (จาก Token)
     const tech = await Technician.findOne({ userId: req.user.id })
     if (!tech) {
       return res.status(404).json({ message: 'ไม่พบโปรไฟล์ช่าง' })
     }
 
-    // 2. ค้นหางาน (ต้องเป็น 'pending' และเป็นของช่างคนนี้)
+    // ค้นหางาน (ต้องเป็น 'pending' และเป็นของช่างคนนี้)
     const booking = await Booking.findOne({
       _id: req.params.id,
       technicianId: tech._id,
@@ -71,7 +78,7 @@ export const rejectBooking = async (req, res) => {
         .json({ message: 'ไม่พบงาน หรือ งานนี้ถูกรับไปแล้ว' })
     }
 
-    // 3. ตั้งสถานะเป็น 'cancelled' (เพราะ 'rejected' ไม่มีใน enum ของคุณ)
+    // ตั้งสถานะเป็น 'cancelled' (เพราะ 'rejected' ไม่มีใน enum ของคุณ)
     booking.status = 'cancelled'
     booking.technicianNotes = 'Technician rejected the assignment.' // (เพิ่มโน้ต)
     await booking.save()
@@ -92,13 +99,12 @@ export const acceptBooking = async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบโปรไฟล์ช่าง' })
     }
 
-    // ค้นหางานด้วย ID ที่ส่งมา
     const booking = await Booking.findById(req.params.id)
     if (!booking) {
       return res.status(404).json({ message: 'ไม่พบงานนี้' })
     }
 
-    // (สำคัญ) ตรวจสอบว่างานนี้เป็นของช่างคนนี้จริงๆ
+    // ตรวจสอบว่างานนี้เป็นของช่างคนนี้จริงๆ
     if (booking.technicianId.toString() !== tech._id.toString()) {
       return res.status(403).json({ message: 'คุณไม่มีสิทธิ์รับงานนี้' })
     }
@@ -113,9 +119,69 @@ export const acceptBooking = async (req, res) => {
     })
     await history.save()
 
-    res.json({ message: 'รับงานเรียบร้อย', booking })
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate('customerId', 'fullName phone district')
+      .populate({ path: 'services.serviceId', select: 'name' })
+    res.json({ message: 'รับงานเรียบร้อย', booking: populatedBooking }) // ส่งตัวที่ populate แล้ว
   } catch (error) {
     console.error('Error acceptBooking:', error)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// ช่าง: อัปเดตสถานะ "กำลังเดินทาง"
+export const setOnTheWay = async (req, res) => {
+  try {
+    const tech = await Technician.findOne({ userId: req.user.id })
+    const booking = await Booking.findOneAndUpdate(
+      { _id: req.params.id, technicianId: tech._id, status: 'accepted' },
+      { status: 'on_the_way' },
+      { new: true }
+    )
+
+    if (!booking) return res.status(404).json({ message: 'ไม่พบงาน' })
+
+    // Populate ข้อมูลก่อนส่งกลับ (กันชื่อลูกค้าหาย)
+    const populatedBooking = await booking.populate([
+      { path: 'customerId', select: 'fullName phone district' },
+      { path: 'services.serviceId', select: 'name' },
+    ])
+
+    res.json({
+      message: "อัปเดตสถานะ 'กำลังเดินทาง' สำเร็จ",
+      booking: populatedBooking,
+    })
+  } catch (error) {
+    console.error('Error setOnTheWay:', error)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+// ช่าง: อัปเดตสถานะ "เริ่มทำงาน"
+export const setWorking = async (req, res) => {
+  try {
+    const tech = await Technician.findOne({ userId: req.user.id })
+    const booking = await Booking.findOneAndUpdate(
+      { _id: req.params.id, technicianId: tech._id, status: 'on_the_way' },
+      { status: 'working' },
+      { new: true }
+    )
+
+    if (!booking)
+      return res.status(404).json({ message: 'ช่างยังไม่ถึงหน้างาน' })
+
+    // (สำคัญ) Populate ข้อมูลก่อนส่งกลับ
+    const populatedBooking = await booking.populate([
+      { path: 'customerId', select: 'fullName phone district' },
+      { path: 'services.serviceId', select: 'name' },
+    ])
+
+    res.json({
+      message: "อัปเดตสถานะ 'เริ่มทำงาน' สำเร็จ",
+      booking: populatedBooking,
+    })
+  } catch (error) {
+    console.error('Error setWorking:', error)
     res.status(500).json({ message: 'Server error' })
   }
 }
@@ -163,40 +229,123 @@ export const uploadBookingPhotos = async (req, res) => {
   }
 }
 
+// ช่าง: ลบรูปภาพออกจากงาน
+export const deleteBookingPhoto = async (req, res) => {
+  try {
+    const { photoUrl } = req.body // URL ของรูปที่จะลบ
+    const { id: bookingId } = req.params // ID ของงาน
+    const techUserId = req.user.id // ID ของช่างที่ล็อกอิน
+
+    if (!photoUrl) {
+      return res.status(400).json({ message: 'ไม่ได้ระบุ URL ของรูปภาพ' })
+    }
+
+    const tech = await Technician.findOne({ userId: techUserId })
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      technicianId: tech._id,
+    })
+
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ message: 'ไม่พบงาน หรือ คุณไม่ใช่เจ้าของงานนี้' })
+    } // ลบรูปออกจาก Cloudinary
+
+    try {
+      // (ดึง Public ID จาก URL, เช่น "booking_photos/abcdef")
+      const parts = photoUrl.split('/')
+      const publicIdWithFormat = parts
+        .slice(parts.indexOf('booking_photos'))
+        .join('/')
+      const publicId = publicIdWithFormat.substring(
+        0,
+        publicIdWithFormat.lastIndexOf('.')
+      )
+
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId)
+      }
+    } catch (cloudinaryError) {
+      console.error(
+        'Cloudinary delete error (อาจลบไปแล้ว):',
+        cloudinaryError.message
+      )
+    } // ลบ URL ออกจาก Array ใน MongoDB
+
+    booking.jobPhotos = booking.jobPhotos.filter((url) => url !== photoUrl)
+    await booking.save()
+
+    const populatedBooking = await booking.populate([
+      { path: 'customerId', select: 'fullName phone district' },
+      { path: 'services.serviceId', select: 'name' },
+    ])
+
+    res.json({ message: 'ลบรูปภาพสำเร็จ', booking: populatedBooking })
+  } catch (error) {
+    console.error('Error deleting photo:', error)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
 // ช่าง: ปิดงาน (Complete Booking)
 export const completeBooking = async (req, res) => {
   try {
-    const { technicianNotes, finalPrice } = req.body
+    const { technicianNotes, finalPrice } = req.body // 1. ตรวจสอบข้อมูลที่รับมา
 
-    // ตรวจสอบว่าส่งราคาสุทธิมาถูกต้อง (สำคัญมาก!)
     const parsedPrice = parseFloat(finalPrice)
     if (!parsedPrice || parsedPrice <= 0) {
       return res.status(400).json({ message: 'กรุณาระบุราคาสุทธิที่ถูกต้อง' })
     }
+    if (!technicianNotes || technicianNotes.trim() === '') {
+      return res.status(400).json({ message: 'กรุณากรอกโน้ตสรุปงานด้วยครับ' })
+    } 
 
-    // หาโปรไฟล์ช่าง (จาก Token)
     const tech = await Technician.findOne({ userId: req.user.id })
     if (!tech) {
       return res.status(404).json({ message: 'ไม่พบโปรไฟล์ช่าง' })
+    } 
+
+    // ค้นหางาน (Find)
+    const booking = await Booking.findOne({
+      _id: req.params.id,
+      technicianId: tech._id,
+    })
+
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ message: 'ไม่พบงาน หรือ คุณไม่ใช่เจ้าของงานนี้' })
+    }
+    if (booking.status.toLowerCase() !== 'working') {
+      return res
+        .status(400)
+        .json({ message: 'ไม่สามารถปิดงานที่ยังไม่ได้เริ่มทำงานได้' })
     }
 
-    // ค้นหางาน และอัปเดตสถานะ (ต้องเป็นงานของช่างคนนี้เท่านั้น)
-    const booking = await Booking.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        technicianId: tech._id,
-      },
-      {
-        status: 'completed',
-        completedAt: Date.now(),
-        technicianNotes: technicianNotes || '',
-        finalPrice: parsedPrice,
-        paymentStatus: 'pending_payment', // (รอให้ลูกค้าจ่าย)
-      },
-      { new: true }
-    )
+    // --- ตรวจสอบราคากับราคาประเมิน ---
+    const estimatedPrice = booking.totalPrice || 0
+    if (parsedPrice < estimatedPrice) {
+      return res.status(400).json({
+        message: `ราคาสุทธิ (฿${parsedPrice}) ต้องไม่ต่ำกว่าราคาประเมิน (฿${estimatedPrice})`,
+      })
+    } 
+    // อัปเดตข้อมูลและบันทึก (Save)
 
-    res.json({ message: 'ปิดงานเรียบร้อย', booking })
+    booking.status = 'completed'
+    booking.completedAt = Date.now()
+    booking.technicianNotes = technicianNotes
+    booking.finalPrice = parsedPrice
+    booking.paymentStatus = 'pending_payment'
+    await booking.save() // บันทึกการเปลี่ยนแปลง 
+
+    // Populate ข้อมูลก่อนส่งกลับ
+    const populatedBooking = await booking.populate([
+      { path: 'customerId', select: 'fullName phone district' },
+      { path: 'services.serviceId', select: 'name' },
+    ])
+
+    res.json({ message: 'ปิดงานเรียบร้อย', booking: populatedBooking })
   } catch (error) {
     console.error('Error completeBooking:', error)
     res.status(500).json({ message: 'Server error' })

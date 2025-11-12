@@ -9,6 +9,9 @@ import {
   rejectBooking,
   getTechnicianProfile,
   uploadBookingPhotos,
+  setOnTheWay,
+  setWorking,
+  deleteBookingPhoto,
 } from '../controllers/technicianController.js'
 import { upload } from '../controllers/uploadController.js'
 
@@ -18,6 +21,21 @@ const router = express.Router()
 router.get('/bookings', auth, roleAuth('technician'), getAssignedBookings)
 // PUT localhost:5000/technicians/bookings/.../accept
 router.put('/bookings/:id/accept', auth, roleAuth('technician'), acceptBooking)
+// PATCH /technicians/bookings/:id/on-the-way
+router.patch(
+  '/bookings/:id/on-the-way',
+  auth,
+  roleAuth('technician'),
+  setOnTheWay
+)
+// PATCH /technicians/bookings/:id/start-work
+router.patch(
+  '/bookings/:id/start-work',
+  auth,
+  roleAuth('technician'),
+  setWorking
+)
+
 // POST /technicians/bookings/:id/upload
 router.post(
   '/bookings/:id/upload',
@@ -25,6 +43,13 @@ router.post(
   roleAuth('technician'),
   upload.array('photos', 5), // (ใช้ .array() เพื่อรับหลายไฟล์, max 5 รูป)
   uploadBookingPhotos
+)
+// PATCH /technicians/bookings/:id/delete-photo
+router.patch(
+  '/bookings/:id/delete-photo',
+  auth,
+  roleAuth('technician'),
+  deleteBookingPhoto
 )
 // PATCH localhost:5000/technicians/bookings/.../complete
 router.patch(
