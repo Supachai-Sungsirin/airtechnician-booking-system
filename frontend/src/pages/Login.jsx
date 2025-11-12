@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import api from "../services/api";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 
@@ -11,10 +11,31 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const location = useLocation();
 
-  const handleGoogleSignup = () => {
-    // Redirect to Google OAuth endpoint
-    window.location.href = `${api.defaults.baseURL}/auth/google/technician`;
+  // 1. โหลดอีเมลที่จดจำไว้ 
+  React.useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+
+    const query = new URLSearchParams(location.search);
+    const googleError = query.get("error");
+
+    if (googleError) {
+      const decodedError = decodeURIComponent(googleError);
+      setMessage(decodedError); // แสดงข้อความ Error ที่ส่งมาจาก Backend
+      setIsSuccess(false);
+
+    }
+  }, [location]);
+
+  const handleGoogleLogin = () => {
+    // Redirect ไปที่ Backend Google Auth endpoint จริง
+    // (ใช้ API Base URL ของคุณ แต่ชี้ไปที่ Route ที่ Passport จัดการ)
+    window.location.href = `${api.defaults.baseURL}auth/google`;
   };
 
   const handleLogin = async (e) => {
@@ -69,15 +90,6 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-
-  // Load remembered email on mount
-  React.useEffect(() => {
-    const rememberedEmail = localStorage.getItem("rememberedEmail");
-    if (rememberedEmail) {
-      setEmail(rememberedEmail);
-      setRememberMe(true);
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
@@ -172,15 +184,15 @@ const Login = () => {
                 <input
                   id="password"
                   // แก้ไข: ใช้ type ตาม State showPassword
-                  type={showPassword ? "text" : "password"} 
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   // เพิ่ม padding ด้านขวาเพื่อไม่ให้ทับไอคอนตา
-                  className="text-black block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+                  className="text-black block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 />
-                
+
                 {/* START: เพิ่มปุ่มสลับการแสดงผลรหัสผ่าน */}
                 <button
                   type="button"
@@ -188,7 +200,11 @@ const Login = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                 >
                   {/* แสดง EyeIcon หรือ EyeOffIcon ตาม State */}
-                  {showPassword ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                  {showPassword ? (
+                    <EyeOffIcon size={20} />
+                  ) : (
+                    <EyeIcon size={20} />
+                  )}
                 </button>
                 {/* END: ปุ่มสลับการแสดงผลรหัสผ่าน */}
               </div>
@@ -221,11 +237,11 @@ const Login = () => {
 
             {/* Message Display */}
             {message && (
-              <div
+            <div
                 className={`p-4 rounded-lg ${
-                  isSuccess
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-red-50 border border-red-200"
+                    isSuccess
+                        ? "bg-green-50 border border-green-200"
+                        : "bg-red-50 border border-red-200"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -268,9 +284,9 @@ const Login = () => {
                 </div>
               </div>
             )}
-<button
+            <button
               type="button"
-              onClick={handleGoogleSignup}
+              onClick={handleGoogleLogin}
               className="w-full bg-white border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

@@ -11,6 +11,8 @@ import adminRoutes from "./routes/adminRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js"
 import serviceRoutes from "./routes/serviceRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
+import passport from "passport";
+import "./config/passport.js";
 
 dotenv.config();
 connectDB();
@@ -19,9 +21,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(morgan("dev"));
+app.use(passport.initialize()); 
 
 app.get("/", (req, res) => {
-  res.send("AirTech API is running...");
+  res.send("CoolQ App API is running...");
 });
 
 // routes

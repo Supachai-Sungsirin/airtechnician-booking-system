@@ -15,7 +15,8 @@ import {
     getUserDetail,
     updateUser,
     updateTechnicianInfo,
-    getAllBookings
+    getAllBookings,
+    deleteUser
 } from "../controllers/adminController.js";
 
 const router = express.Router();
@@ -30,6 +31,7 @@ router.get("/dashboard/stats", auth, isAdmin, getDashboardStats);
     ======================= */
 router.post("/add-admin", auth, isAdmin, addAdmin);
 router.get("/admins", auth, isAdmin, getAllAdmins);
+router.delete("/user/:id", deleteUser); 
 
 /*  =======================
         TECHNICIAN MANAGEMENT

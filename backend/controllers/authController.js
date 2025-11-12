@@ -5,6 +5,66 @@ import Technician from "../models/Technician.js";
 import Services from "../models/Service.js";
 import cloudinary from "../config/cloudinary.js";
 
+// เข้าสู่ระบบด้วย Google OAuth
+export const googleAuthCallback = async (req, res) => {
+    // ในสถานการณ์จริง ข้อมูลนี้ (googleEmail, fullName) จะมาจาก Google API/Passport.js/Middleware
+    // สำหรับการจำลอง เราสมมติว่ามีการส่ง email มาใน body
+    const { googleEmail } = req.body; 
+
+    if (!googleEmail) {
+        return res.status(400).json({ message: "ไม่พบอีเมลจาก Google" });
+    }
+
+    try {
+        // 1. ตรวจสอบว่าอีเมลนี้มีอยู่ในระบบหรือไม่
+        const user = await User.findOne({ email: googleEmail });
+        
+        if (!user) {
+            // กรณี: ไม่พบผู้ใช้ (ส่งกลับสถานะ 404 พร้อมข้อความแจ้งเตือน)
+            return res.status(404).json({ 
+                message: "ไม่พบอีเมลนี้ในระบบ กรุณาเข้าสู่ระบบด้วยรหัสผ่านหรือสมัครสมาชิกใหม่",
+                googleEmail: googleEmail,
+                action: "register_required"
+            });
+        }
+
+        // 2. ถ้าเป็น Technician ให้เช็คสถานะการอนุมัติ (ตาม Logic เดิม)
+        if (user.role === "technician") {
+            const technician = await Technician.findOne({ userId: user._id });
+            if (!technician) {
+                return res.status(400).json({ message: "ไม่พบข้อมูลช่าง" });
+            }
+            if (technician.status !== "approved") {
+                return res.status(403).json({ message: "บัญชีช่างนี้ยังไม่ผ่านการอนุมัติ" });
+            }
+        }
+        
+        // 3. สร้าง Token และทำการเข้าสู่ระบบ
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        res.json({
+            message: "เข้าสู่ระบบด้วย Google สำเร็จ",
+            accessToken: token,
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                fullName: user.fullName,
+                district: user.district,
+                province: user.province,
+            },
+        });
+
+    } catch (error) {
+        console.error("Google Auth error:", error);
+        res.status(500).json({ message: "เกิดข้อผิดพลาดในการตรวจสอบบัญชี" });
+    }
+};
+
 // สมัครสมาชิก Customer
 export const registerCustomer = async (req, res) => {
   try {
