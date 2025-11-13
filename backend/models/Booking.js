@@ -18,9 +18,9 @@ const bookingSchema = new mongoose.Schema({
         ref: 'Service',
         required: true,
       },
-      btuRange: { type: String }, // เช่น "9000-12000"
+      btuRange: { type: String }, 
       quantity: { type: Number, default: 1 },
-      price: { type: Number, required: true }, // ราคาต่อเครื่องหรือเหมาจ่าย
+      price: { type: Number, required: true }, 
     },
   ],
   problemDescription: { type: String, required: true },
@@ -44,13 +44,12 @@ const bookingSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  totalPrice: { type: Number }, // รวมทุก service
+  totalPrice: { type: Number }, 
   createdAt: { type: Date, default: Date.now },
 
-  // --- เพิ่ม Field ใหม่ 3 ช่องนี้ ---
-  completedAt: { type: Date }, // วันที่ปิดงาน (สำหรับ completeBooking)
-  technicianNotes: { type: String, default: '' }, // โน้ตจากช่าง (สำหรับ completeBooking)
-  jobPhotos: [{ type: String }], // Array ของ URL รูปภาพ (สำหรับ uploadBookingPhoto)
+  completedAt: { type: Date }, 
+  technicianNotes: { type: String, default: '' }, 
+  jobPhotos: [{ type: String }], 
 
   finalPrice: {
     type: Number,
