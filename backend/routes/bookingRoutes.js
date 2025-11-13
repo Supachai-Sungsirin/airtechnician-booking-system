@@ -4,7 +4,7 @@ import {
   createBooking,
   getCustomerBookings,
   getTechnicianBookings,
-  getBookings,
+  // getBookings,
   getBookingById,
   updateBookingStatus,
   checkAvailability,
@@ -213,7 +213,6 @@ router.patch("/:id/mock-pay", auth, mockCompletePayment);
  *   get:
  *     summary: ตรวจสอบเวลาที่ช่างว่าง
  *     tags: [Bookings]
- *     description: คืนค่า available = true หากไม่มี booking ในช่วงเวลาที่ระบุ ±59 นาที
  *     parameters:
  *       - in: query
  *         name: dateTime
@@ -472,8 +471,8 @@ router.get("/:id", auth, getBookingById);
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [pending, confirmed, completed, cancelled]
- *                 example: "confirmed"
+ *                 enum: [pending, accepted, on_the_way, working, completed, cancelled]
+ *                 example: "completed"
  *     responses:
  *       200:
  *         description: อัปเดตสถานะสำเร็จ
@@ -485,21 +484,21 @@ router.get("/:id", auth, getBookingById);
 // อัพเดตสถานะ Booking
 router.patch("/:id/status", auth, updateBookingStatus);
 
-/**
- * @swagger
- * /booking:
- *   get:
- *     summary: ดึงรายการการจองทั้งหมด (สำหรับแอดมิน)
- *     tags: [Bookings]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: ดึงข้อมูลทั้งหมดสำเร็จ
- *       403:
- *         description: ไม่มีสิทธิ์เข้าถึง
- */
-// (สำหรับ Admin)
-router.get("/", auth, getBookings);
+// /**
+//  * @swagger
+//  * /booking:
+//  *   get:
+//  *     summary: ดึงรายการการจองทั้งหมด (สำหรับแอดมิน)
+//  *     tags: [Bookings]
+//  *     security:
+//  *       - BearerAuth: []
+//  *     responses:
+//  *       200:
+//  *         description: ดึงข้อมูลทั้งหมดสำเร็จ
+//  *       403:
+//  *         description: ไม่มีสิทธิ์เข้าถึง
+//  */
+// // (สำหรับ Admin)
+// router.get("/", auth, getBookings);
 
 export default router;

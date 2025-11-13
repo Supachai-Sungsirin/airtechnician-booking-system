@@ -189,22 +189,22 @@ export const getTechnicianBookings = async (req, res) => {
 // ==========================
 // Admin: ดู Booking ทั้งหมด
 // ==========================
-export const getBookings = async (req, res) => {
-  try {
-    const bookings = await Booking.find()
-      .populate("customerId", "fullName phone district")
-      .populate({
-        path: "technicianId",
-        populate: { path: "userId", select: "fullName phone" },
-      })
-      .sort({ createdAt: -1 });
+// export const getBookings = async (req, res) => {
+//   try {
+//     const bookings = await Booking.find()
+//       .populate("customerId", "fullName phone district")
+//       .populate({
+//         path: "technicianId",
+//         populate: { path: "userId", select: "fullName phone" },
+//       })
+//       .sort({ createdAt: -1 });
 
-    res.json(bookings);
-  } catch (error) {
-    console.error("Error getBookings:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
+//     res.json(bookings);
+//   } catch (error) {
+//     console.error("Error getBookings:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 
 // ==========================
 // Get Booking by Id
