@@ -37,7 +37,7 @@ const AuthCallback = () => {
             if (role === 'admin') {
                 dashboardPath = '/AdminDashboard';
             } else if (role === 'technician') {
-                dashboardPath = '/TechnicianDashboard';
+                dashboardPath = '/technician/dashboard';
             } else if (role === 'customer') {
                 dashboardPath = '/CustomerDashboard';
             } else {
