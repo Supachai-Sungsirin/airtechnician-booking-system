@@ -46,7 +46,6 @@ const bookingSchema = new mongoose.Schema({
   },
   totalPrice: { type: Number }, 
   createdAt: { type: Date, default: Date.now },
-
   completedAt: { type: Date }, 
   technicianNotes: { type: String, default: '' }, 
   jobPhotos: [{ type: String }], 
@@ -55,12 +54,10 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: null,
   },
-
   paymentStatus: {
     type: String,
     enum: ['pending_payment', 'paid'],
     default: 'pending_payment',
   },
 })
-
 export default mongoose.model('Booking', bookingSchema)

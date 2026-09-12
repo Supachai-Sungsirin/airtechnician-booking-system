@@ -5,18 +5,15 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   phone: { type: String },
-
   role: {
     type: String,
     enum: ['customer', 'technician', 'admin'],
     default: 'customer',
   },
-
   profileImageUrl: {
     type: String,
-    default: '', // (คุณสามารถใส่ URL รูป Default ของระบบไว้ที่นี่)
-  }, // เฉพาะลูกค้า/ช่างเท่านั้นที่ต้องมี
-
+    default: '',
+  },
   address: {
     type: String,
     required: function () {
@@ -41,8 +38,6 @@ const userSchema = new mongoose.Schema({
       return this.role !== 'admin'
     },
   },
-
   createdAt: { type: Date, default: Date.now },
 })
-
 export default mongoose.model('User', userSchema)
